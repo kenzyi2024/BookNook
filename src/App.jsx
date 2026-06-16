@@ -85,7 +85,7 @@ export default function App() {
             <div className="w-8 h-8 bg-amber-700 rounded-lg flex items-center justify-center text-white shadow-sm">
               <BookOpen size={18} />
             </div>
-            <h1 className="font-serif font-bold text-xl tracking-tight text-amber-950">BookTracker</h1>
+            <h1 className="font-serif font-bold text-xl tracking-tight text-amber-950">BookNook</h1>
           </div>
           
           <div className="flex items-center gap-1 md:gap-4 bg-stone-100 p-1 rounded-full">

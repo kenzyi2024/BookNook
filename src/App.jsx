@@ -10,6 +10,9 @@ import { Show, SignInButton, SignUpButton, UserButton, ClerkLoading } from "@cle
 
 import logoImg from './assets/logo.png';
 
+import gsap from "gsap";
+
+
 // --- API Helpers ---
 const callGemini = async (prompt) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -225,47 +228,9 @@ const handleDeleteBook = async (id) => {
         
         {/* --- What logged-out users see (The "Login Page") --- */}
         {/* --- What logged-out users see (The Landing Page) --- */}
+        {/* --- What logged-out users see (The Landing Page) --- */}
         <Show when="signed-out">
-          {/* 1. Full screen container with a soft, warm gradient background */}
-          <div className="relative flex flex-col items-center justify-center min-h-[85vh] text-center overflow-hidden">
-            
-            {/* 2. Decorative Background Blobs (Soft, blurred glowing orbs) */}
-            <div className="absolute top-10 left-1/4 w-72 h-72 bg-amber-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse" />
-            <div className="absolute bottom-10 right-1/4 w-72 h-72 bg-orange-200/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse" style={{ animationDelay: '1s' }} />
-
-            {/* 3. The Main Content Box (Glassmorphism effect) */}
-            <div className="relative z-10 flex flex-col items-center p-8 md:p-12 rounded-[2.5rem] bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-2xl mx-4 animate-in fade-in zoom-in-95 duration-700">
-              
-              <img 
-                src={logoImg} 
-                alt="Welcome to BookNook" 
-                className="h-32 md:h-40 w-auto object-contain mb-6 drop-shadow-xl hover:scale-105 transition-transform duration-500" 
-              />
-              
-              {/* 4. A punchy new headline to grab attention! */}
-              <h1 className="text-4xl md:text-5xl font-serif font-bold text-stone-800 mb-4 tracking-tight leading-tight">
-                Your cozy digital library.
-              </h1>
-              
-              <p className="text-stone-500 max-w-md mb-10 text-lg font-medium leading-relaxed">
-                Log in or create an account to start tracking your reading journey, discovering new favorites, and exploring AI-powered insights.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <SignInButton mode="modal">
-                  <button className="w-full sm:w-auto bg-[#C05D22] hover:bg-[#A34B18] text-white px-10 py-4 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg border border-transparent">
-                    Sign In
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="w-full sm:w-auto bg-stone-900 hover:bg-stone-800 text-white px-10 py-4 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg border border-transparent">
-                    Sign Up
-                  </button>
-                </SignUpButton>
-              </div>
-              
-            </div>
-          </div>
+          <AnimatedIntro logoImg={logoImg} />
         </Show>
 
         {/* --- What logged-in users see (The Actual App) --- */}
@@ -1354,3 +1319,86 @@ const ShelfWave2 = () => (
     <path d="M0,60 C200,20 300,40 500,80 C700,120 800,80 1000,20 L1000,120 L0,120 Z" fill="#b45309" />
   </svg>
 );
+
+
+function AnimatedIntro({ logoImg }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    let ctx = gsap.context(() => {
+      const tl = gsap.timeline();
+
+      // Step 1: Typewriter effect
+      tl.fromTo(".typewriter-container",
+        { width: "0%" },
+        { width: "100%", duration: 1.2, ease: "steps(15)", delay: 0.4 }
+      )
+      // Step 2: Breathe In (Logo scales up and sharpens, then stays)
+      .fromTo(".intro-logo",
+        { opacity: 0, scale: 0.8, filter: "blur(10px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.8, ease: "power2.out" }
+      )
+      // Step 3: Fade in the instructions and buttons
+      .fromTo(".action-area",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 1.2, ease: "power2.out" },
+        "-=0.8" // Overlap this so the buttons appear right as the logo settles
+      );
+    }, containerRef);
+
+    return () => ctx.revert(); 
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative flex flex-col items-center justify-center min-h-[85vh] bg-[#FCF9F2] overflow-hidden px-4">
+      
+      {/* CSS for the blinking typewriter cursor */}
+      <style>{`
+        .typewriter-cursor::after {
+          content: '|';
+          animation: blink 1s step-end infinite;
+          margin-left: 4px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+      `}</style>
+
+      <div className="z-10 flex flex-col items-center text-center">
+        
+        {/* The Typewriter Text */}
+        <div className="typewriter-container overflow-hidden whitespace-nowrap opacity-100 flex justify-center mb-6">
+          <span className="text-2xl md:text-4xl font-serif font-bold text-stone-700 typewriter-cursor tracking-tight">
+            welcome to your
+          </span>
+        </div>
+
+        {/* The Logo */}
+        <img 
+          src={logoImg} 
+          alt="BookNook Logo" 
+          className="intro-logo h-36 md:h-48 object-contain opacity-0 drop-shadow-md mb-10"
+        />
+
+        {/* Action Area (Text and Buttons) */}
+        <div className="z-10 action-area opacity-0 flex flex-col items-center">
+          <p className="text-stone-500 mb-8 text-lg font-medium max-w-md">
+            Log in or create an account to start tracking your reading journey.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <SignInButton mode="modal">
+              <button className="w-full sm:w-auto bg-[#C05D22] hover:bg-[#A34B18] text-white px-10 py-3.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-300 text-lg">
+                Sign In
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="w-full sm:w-auto bg-stone-900 hover:bg-stone-800 text-white px-10 py-3.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-300 text-lg">
+                Sign Up
+              </button>
+            </SignUpButton>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

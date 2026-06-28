@@ -164,7 +164,7 @@ const handleDeleteBook = async (id) => {
   return (
     // Warmer cream background for the whole app
     <div className="min-h-screen bg-[#FCF9F2] text-stone-800 font-sans selection:bg-orange-200">
-      
+      <Show when="signed-in">
       {/* Softer, warmer Navigation Bar */}
       <nav className="bg-[#FCF9F2]/90 backdrop-blur-md border-b border-orange-900/10 sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-6 py-2 flex items-center justify-between">
@@ -206,34 +206,11 @@ const handleDeleteBook = async (id) => {
               <Plus size={18} strokeWidth={3} /> <span className="hidden md:inline text-sm">Add Book</span>
             </button>
             
-            {/* --- What logged-out users see (The "Login Page") --- */}
-        <Show when="signed-out">
-          <div className="flex flex-col items-center justify-center h-[70vh] text-center animate-in fade-in zoom-in duration-700">
-            <img 
-              src={logoImg} 
-              alt="Welcome to BookNook" 
-              className="h-48 md:h-64 w-auto object-contain mb-2 drop-shadow-xl hover:scale-105 transition-transform duration-500" 
-            />
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-stone-800 mb-4 tracking-tight">Your cozy digital library.</h2>
-            <p className="text-stone-500 max-w-md mb-8 text-lg font-medium">Log in or create an account to start tracking your reading journey.</p>
-            <div className="flex gap-4">
-              <SignInButton mode="modal">
-                <button className="bg-[#C05D22] hover:bg-[#A34B18] text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 text-lg">Sign In</button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="bg-stone-800 text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:bg-stone-900 transition-all hover:-translate-y-0.5 text-lg">Sign Up</button>
-              </SignUpButton>
-            </div>
-          </div>
-        </Show>
-            <Show when="signed-in">
-              <UserButton afterSignOutUrl="/" />
-            </Show>
           </div>
 
         </div>
       </nav>
-    
+    </Show>
 
       {/* Main Content */}
       {/* Main Content */}
@@ -247,21 +224,46 @@ const handleDeleteBook = async (id) => {
         </ClerkLoading>
         
         {/* --- What logged-out users see (The "Login Page") --- */}
+        {/* --- What logged-out users see (The Landing Page) --- */}
         <Show when="signed-out">
-          <div className="flex flex-col items-center justify-center h-[60vh] text-center animate-in fade-in zoom-in duration-500">
-            <img 
-              src={logoImg} 
-              alt="Welcome to BookNook" 
-              className="h-32 md:h-40 w-auto object-contain mb-4 drop-shadow-md" 
-            />
-            <p className="text-stone-500 max-w-md mb-8 text-lg">Your personal, digital library. Log in or create an account to start tracking your reading journey.</p>
-            <div className="flex gap-4">
-              <SignInButton mode="modal">
-                <button className="bg-amber-700 hover:bg-amber-800 text-white px-8 py-3 rounded-full font-bold shadow-md transition-colors text-lg">Sign In</button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="bg-stone-900 text-white px-8 py-3 rounded-full font-bold shadow-md hover:bg-stone-800 transition-colors text-lg">Sign Up</button>
-              </SignUpButton>
+          {/* 1. Full screen container with a soft, warm gradient background */}
+          <div className="relative flex flex-col items-center justify-center min-h-[85vh] text-center overflow-hidden">
+            
+            {/* 2. Decorative Background Blobs (Soft, blurred glowing orbs) */}
+            <div className="absolute top-10 left-1/4 w-72 h-72 bg-amber-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse" />
+            <div className="absolute bottom-10 right-1/4 w-72 h-72 bg-orange-200/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse" style={{ animationDelay: '1s' }} />
+
+            {/* 3. The Main Content Box (Glassmorphism effect) */}
+            <div className="relative z-10 flex flex-col items-center p-8 md:p-12 rounded-[2.5rem] bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-2xl mx-4 animate-in fade-in zoom-in-95 duration-700">
+              
+              <img 
+                src={logoImg} 
+                alt="Welcome to BookNook" 
+                className="h-32 md:h-40 w-auto object-contain mb-6 drop-shadow-xl hover:scale-105 transition-transform duration-500" 
+              />
+              
+              {/* 4. A punchy new headline to grab attention! */}
+              <h1 className="text-4xl md:text-5xl font-serif font-bold text-stone-800 mb-4 tracking-tight leading-tight">
+                Your cozy digital library.
+              </h1>
+              
+              <p className="text-stone-500 max-w-md mb-10 text-lg font-medium leading-relaxed">
+                Log in or create an account to start tracking your reading journey, discovering new favorites, and exploring AI-powered insights.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <SignInButton mode="modal">
+                  <button className="w-full sm:w-auto bg-[#C05D22] hover:bg-[#A34B18] text-white px-10 py-4 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg border border-transparent">
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="w-full sm:w-auto bg-stone-900 hover:bg-stone-800 text-white px-10 py-4 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg border border-transparent">
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </div>
+              
             </div>
           </div>
         </Show>

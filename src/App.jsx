@@ -923,7 +923,7 @@ function BookDetailView({ book, onUpdate, onBack, onDelete }) {
         )}
 
         {activeSubTab === 'ai' && (
-          <AIToolsView book={book} />
+          <AIToolsView book={book} onUpdate={onUpdate} /> 
         )}
       </div>
     </div>
@@ -956,7 +956,7 @@ function StarRating({ exactRating }) {
 }
 
 // --- AI Tools Component ---
-function AIToolsView({ book }) {
+function AIToolsView({ book, onUpdate }) {
   const [activeTool, setActiveTool] = useState(null); // recap, analysis, seminar
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);

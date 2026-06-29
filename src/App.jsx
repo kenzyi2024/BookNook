@@ -964,24 +964,73 @@ function AIToolsView({ book }) {
   const [chatHistory, setChatHistory] = useState([]);
   const [chatInput, setChatInput] = useState('');
 
-  const handleRecap = async () => {
-    setActiveTool('recap');
+const handleRecap = async () => {
+    setActiveTool('recap'); // Switch the UI to the recap view
+    
+    // 1. CHECK THE CACHE FIRST
+    // If we have a recap AND the page number hasn't changed, load it instantly!
+    if (book.smartRecap && book.recapPage === book.currentPage) {
+      setResult(book.smartRecap);
+      return; // Stop running the function here to save API credits
+    }
+
+    // 2. IF NOT CACHED, CALL GEMINI
     setLoading(true);
-    setResult('');
-    const prompt = `Give me a plot recap of the book "${book.title}" by ${book.author} up to page ${book.currentPage} out of ${book.totalPages} pages. DO NOT spoil anything that happens after this point. Keep it engaging and concise.`;
-    const res = await callGemini(prompt);
-    setResult(res);
-    setLoading(false);
+    setResult(""); // Clear any old text from the screen
+    
+    try {
+      // ---> PASTE YOUR EXISTING GEMINI API CALL CODE HERE <---
+      // (e.g., const response = await chatSession.sendMessage(prompt);)
+      // const generatedText = response.text();
+      
+      // Update the screen with the new text
+      setResult(generatedText); 
+
+      // 3. SILENTLY SAVE TO MONGODB
+      // This ensures it is cached for the next time they click the button
+      onUpdate({ 
+        smartRecap: generatedText, 
+        recapPage: book.currentPage 
+      });
+      
+    } catch (error) {
+      console.error("Error generating recap:", error);
+      setResult("Oops! Something went wrong generating your recap.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAnalysis = async () => {
-    setActiveTool('analysis');
+const handleAnalysis = async () => {
+    setActiveTool('analysis'); // Switch the UI to the analysis view
+    
+    // 1. CHECK THE CACHE FIRST
+    if (book.aiAnalysis) {
+      setResult(book.aiAnalysis);
+      return; // Stop here and load instantly!
+    }
+
+    // 2. IF NOT CACHED, CALL GEMINI
     setLoading(true);
-    setResult('');
-    const prompt = `Provide an English-class style analysis kit for the book "${book.title}" by ${book.author}. Include: Major Themes, Motifs to look out for, Key Symbols, and 3 thought-provoking questions to ponder while reading. CRITICAL: DO NOT include any spoilers. Keep it completely safe for someone who has not finished the book. Format nicely with markdown.`;
-    const res = await callGemini(prompt);
-    setResult(res);
-    setLoading(false);
+    setResult("");
+    
+    try {
+      // ---> PASTE YOUR EXISTING GEMINI API CALL CODE HERE <---
+      // (e.g., const response = await chatSession.sendMessage(prompt);)
+      // const generatedText = response.text();
+      
+      // Update the screen with the new text
+      setResult(generatedText);
+
+      // 3. SILENTLY SAVE TO MONGODB
+      onUpdate({ aiAnalysis: generatedText });
+      
+    } catch (error) {
+      console.error("Error generating analysis:", error);
+      setResult("Oops! Something went wrong analyzing this book.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChat = async (e) => {

@@ -81,28 +81,27 @@ useEffect(() => {
   }, []);
 
   const handleUpdateBook = async (id, updates) => {
-    // 1. Instantly update the UI so it feels snappy
-    setBooks(books.map(b => b.id === id ? { ...b, ...updates } : b));
-    if (selectedBook && selectedBook.id === id) {
-      setSelectedBook({ ...selectedBook, ...updates });
-    }
-
-    // 2. Secretly save the changes to the database
     try {
-      const response = await fetch(`${API_URL}/api/books/${id}`, {
+      // 1. Send to backend
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/books/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save changes to the database');
+      if (!response.ok) throw new Error("Failed to update");
+      const updatedBook = await response.json();
+
+      // 2. Update the main library array
+      setBooks(books.map(b => b._id === id ? updatedBook : b));
+      
+      // 3. CRITICAL: Update the currently selected book in memory instantly!
+      if (selectedBook && selectedBook._id === id) {
+        setSelectedBook(updatedBook);
       }
+      
     } catch (error) {
-      console.error("Error updating book:", error);
-      console.warn("Changes may not have saved to the database.");
+      console.error(error);
     }
   };
 

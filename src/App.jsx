@@ -208,6 +208,9 @@ const handleDeleteBook = async (id) => {
             >
               <Plus size={18} strokeWidth={3} /> <span className="hidden md:inline text-sm">Add Book</span>
             </button>
+                
+                {/* Add the Clerk User Profile Button here! */}
+                <UserButton afterSignOutUrl="/" />
             
           </div>
 

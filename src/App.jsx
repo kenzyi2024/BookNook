@@ -1001,32 +1001,32 @@ const handleRecap = async () => {
   };
 
 const handleAnalysis = async () => {
-    setActiveTool('analysis'); // Switch the UI to the analysis view
+    setActiveTool('analysis');
     
-    // 1. CHECK THE CACHE FIRST
+    // 1. Check the cache
     if (book.aiAnalysis) {
       setResult(book.aiAnalysis);
-      return; // Stop here and load instantly!
+      return; // Stop!
     }
 
-    // 2. IF NOT CACHED, CALL GEMINI
     setLoading(true);
     setResult("");
     
     try {
-      // ---> PASTE YOUR EXISTING GEMINI API CALL CODE HERE <---
-      // (e.g., const response = await chatSession.sendMessage(prompt);)
+      // 🛑 COMMENT OUT YOUR REAL GEMINI API CALL 🛑
+      // const response = await chatSession.sendMessage(...);
       // const generatedText = response.text();
       
-      // Update the screen with the new text
+      // ✅ USE THIS FREE TEST STRING INSTEAD ✅
+      const generatedText = "SUCCESS! This is a free test string. If this stays here after you refresh the page, the database is saving properly!";
+      
       setResult(generatedText);
 
-      // 3. SILENTLY SAVE TO MONGODB
+      // 3. Send to MongoDB
       onUpdate({ aiAnalysis: generatedText });
       
     } catch (error) {
-      console.error("Error generating analysis:", error);
-      setResult("Oops! Something went wrong analyzing this book.");
+      console.error(error);
     } finally {
       setLoading(false);
     }

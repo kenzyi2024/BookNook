@@ -1002,6 +1002,7 @@ const handleRecap = async () => {
 
 const handleAnalysis = async () => {
     setActiveTool('analysis');
+
     
     // 1. Check the cache
     if (book.aiAnalysis) {

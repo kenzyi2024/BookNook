@@ -5,7 +5,10 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // The backend is its own Node project nested in this repo — don't lint it with
+  // the browser-oriented frontend config. Also skip build output and the
+  // to-be-deleted scratch folder.
+  globalIgnores(['dist', 'booktracker-backend copy', '_to_delete']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

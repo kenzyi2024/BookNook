@@ -1,30 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles } from 'lucide-react';
+import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles, Share2 } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
+import SessionLogger from './SessionLogger';
+import NotesJournal from './NotesJournal';
+import ShareCard from './ShareCard';
 import { STATUS_OPTIONS } from '../../lib/status';
 
 /**
  * Full-page view for one book: cover, metadata, status/rating controls, and the
- * Progress / Notes / AI tabs.
+ * Progress / Notes / AI tabs, plus a shareable finish card.
  */
 export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   const [activeSubTab, setActiveSubTab] = useState('progress');
   const [coverUrl, setCoverUrl] = useState(book.coverUrl);
   const [ratingInput, setRatingInput] = useState(book.rating ? String(book.rating) : '');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const hasAttemptedFetch = useRef(false);
 
-  const safeCurrentPage = parseInt(book.currentPage, 10) || 0;
-  const progressPercent = Math.round((safeCurrentPage / book.totalPages) * 100) || 0;
-  const pagesLeft = Math.max(0, book.totalPages - safeCurrentPage);
-
-  // Auto-fetch a cover from OpenLibrary once, if we don't already have one.
   useEffect(() => {
     if (book.coverUrl || hasAttemptedFetch.current) return;
     hasAttemptedFetch.current = true;
-
     (async () => {
       try {
         const query = encodeURIComponent(`${book.title} ${book.author}`);
@@ -49,20 +47,11 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
     if (!isNaN(num) && num >= 0 && num <= 5) onUpdate({ rating: num });
   };
 
-  const handlePageUpdate = (val) => {
-    if (val === '') {
-      onUpdate({ currentPage: 0 });
-      return;
-    }
-    let newPage = parseInt(val, 10);
-    if (isNaN(newPage)) return;
-    newPage = Math.min(book.totalPages, Math.max(0, newPage));
-
-    const updates = { currentPage: newPage };
-    if (newPage === book.totalPages && book.status !== 'read') {
-      updates.status = 'read';
-    } else if (newPage > 0 && newPage < book.totalPages && book.status === 'want_to_read') {
-      updates.status = 'reading';
+  const handleStatusChange = (status) => {
+    const updates = { status };
+    if (status === 'read') {
+      if (!book.finishedAt) updates.finishedAt = new Date().toISOString();
+      if (book.currentPage < book.totalPages) updates.currentPage = book.totalPages;
     }
     onUpdate(updates);
   };
@@ -108,7 +97,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <select
               value={book.status}
-              onChange={(e) => onUpdate({ status: e.target.value })}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="bg-stone-100 border border-stone-200 text-ink text-sm rounded-full px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-brand-400"
             >
               {STATUS_OPTIONS.map((o) => (
@@ -118,12 +107,20 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
               ))}
             </select>
             <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100">
-              {book.totalPages} pages
+              {book.isAudio ? '🎧 ' : ''}{book.totalPages} pages
             </span>
             {book.genre && (
               <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100">
                 {book.genre}
               </span>
+            )}
+            {book.status === 'read' && (
+              <button
+                onClick={() => setShareOpen(true)}
+                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors"
+              >
+                <Share2 size={15} /> Share
+              </button>
             )}
           </div>
 
@@ -163,58 +160,8 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
       </div>
 
       <div className="bg-surface p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100 min-h-[400px]">
-        {activeSubTab === 'progress' && (
-          <div className="max-w-xl animate-in fade-in">
-            <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-4">Update Current Page</h3>
-            <div className="flex items-center gap-4 mb-8">
-              <input
-                type="number"
-                value={book.currentPage || ''}
-                onChange={(e) => handlePageUpdate(e.target.value)}
-                className="w-24 text-3xl font-display font-bold text-ink border-b-2 border-brand-200 focus:border-brand-500 focus:outline-none py-1 text-center bg-transparent"
-              />
-              <span className="text-xl text-stone-400 font-display">of {book.totalPages} pages</span>
-            </div>
-
-            <div className="relative mb-6 h-6 flex items-center group mt-8">
-              <div className="absolute w-full h-4 bg-stone-100 rounded-full shadow-inner pointer-events-none" />
-              <div
-                className="absolute left-0 h-4 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full pointer-events-none transition-all duration-300 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-              <div
-                className="absolute h-6 w-6 bg-surface border-4 border-brand-500 rounded-full shadow-md pointer-events-none group-hover:scale-110 transition-transform z-0"
-                style={{ left: `calc(${progressPercent}% - 12px)` }}
-              />
-              <input
-                type="range"
-                min="0"
-                max={book.totalPages}
-                value={safeCurrentPage}
-                onChange={(e) => handlePageUpdate(e.target.value)}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                aria-label="Reading progress"
-              />
-            </div>
-
-            <div className="flex justify-between text-sm font-semibold text-stone-500 mb-8">
-              <span>{progressPercent}% Complete</span>
-              <span>{pagesLeft} pages left</span>
-            </div>
-          </div>
-        )}
-
-        {activeSubTab === 'notes' && (
-          <div className="h-full flex flex-col animate-in fade-in">
-            <textarea
-              value={book.notes || ''}
-              onChange={(e) => onUpdate({ notes: e.target.value })}
-              placeholder="Jot down your thoughts, favorite quotes, or reminders here..."
-              className="w-full flex-1 min-h-[300px] p-6 bg-paper border border-stone-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 text-stone-700 leading-relaxed font-serif text-lg shadow-inner"
-            />
-          </div>
-        )}
-
+        {activeSubTab === 'progress' && <SessionLogger book={book} onUpdate={onUpdate} />}
+        {activeSubTab === 'notes' && <NotesJournal book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'ai' && <AIToolsView book={book} onUpdate={onUpdate} />}
       </div>
 
@@ -230,6 +177,8 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
           onDelete(book._id);
         }}
       />
+
+      {shareOpen && <ShareCard book={book} onClose={() => setShareOpen(false)} />}
     </div>
   );
 }

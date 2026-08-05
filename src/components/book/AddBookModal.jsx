@@ -29,19 +29,23 @@ export default function AddBookModal({ onClose, onAdd }) {
       }
       setIsSearching(true);
       try {
+        // `q=` is a fuzzier match than `title=`, so close/misspelled titles still
+        // surface similar books; we pull more and let the user scroll.
         const res = await fetch(
-          `https://openlibrary.org/search.json?title=${encodeURIComponent(searchQuery)}&limit=5`
+          `https://openlibrary.org/search.json?q=${encodeURIComponent(searchQuery)}&limit=20&fields=key,title,author_name,number_of_pages_median,cover_i,subject`
         );
         const data = await res.json();
         setSearchResults(
-          (data.docs || []).map((item) => ({
-            id: item.key || Math.random().toString(),
-            title: item.title,
-            author: item.author_name ? item.author_name.join(', ') : 'Unknown Author',
-            totalPages: item.number_of_pages_median || 300,
-            coverUrl: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
-            genre: item.subject ? item.subject[0] : 'Fiction',
-          }))
+          (data.docs || [])
+            .filter((item) => item.title)
+            .map((item) => ({
+              id: item.key || Math.random().toString(),
+              title: item.title,
+              author: item.author_name ? item.author_name.join(', ') : 'Unknown Author',
+              totalPages: item.number_of_pages_median || 300,
+              coverUrl: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
+              genre: item.subject ? item.subject[0] : 'Fiction',
+            }))
         );
       } catch (e) {
         console.error('Search failed', e);
@@ -124,7 +128,7 @@ export default function AddBookModal({ onClose, onAdd }) {
                     <Loader2 className="animate-spin" size={24} />
                   </div>
                 ) : searchResults.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1 -mr-1">
                     {searchResults.map((r) => (
                       <button
                         key={r.id}
@@ -146,7 +150,15 @@ export default function AddBookModal({ onClose, onAdd }) {
                     ))}
                   </div>
                 ) : searchQuery.trim().length > 2 ? (
-                  <div className="text-center text-stone-500 mt-8">No results found.</div>
+                  <div className="text-center mt-8 flex flex-col items-center gap-3">
+                    <p className="text-stone-500">No matches for “{searchQuery}”.</p>
+                    <button
+                      onClick={() => setShowManual(true)}
+                      className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
+                    >
+                      Add it manually
+                    </button>
+                  </div>
                 ) : (
                   <div className="text-center text-stone-400 mt-12 flex flex-col items-center gap-2">
                     <BookOpen size={32} className="opacity-20" />

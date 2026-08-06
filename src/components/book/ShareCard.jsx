@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Download, X } from 'lucide-react';
 import { fmtDate } from '../../lib/format';
 
@@ -41,45 +41,56 @@ function wrapText(ctx, text, maxWidth) {
  */
 export default function ShareCard({ book, onClose }) {
   const canvasRef = useRef(null);
-  const [ready, setReady] = useState(false);
+  // No cover → drawn synchronously in the effect, so it's ready immediately.
+  const [ready, setReady] = useState(!book.coverUrl);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+  const draw = useCallback(
+    (coverImg) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-    // Warm gradient background
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#A34B18');
-    grad.addColorStop(1, '#3D1B08');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
+      // Warm gradient background
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, '#A34B18');
+      grad.addColorStop(1, '#3D1B08');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
 
-    // Subtle border frame
-    ctx.strokeStyle = 'rgba(251,247,239,0.25)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(48, 48, W - 96, H - 96);
+      // Subtle border frame
+      ctx.strokeStyle = 'rgba(251,247,239,0.25)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(48, 48, W - 96, H - 96);
 
-    const cream = '#FBF7EF';
-    const gold = '#E8B04B';
+      const cream = '#FBF7EF';
+      const gold = '#E8B04B';
 
-    // Header label
-    ctx.fillStyle = 'rgba(251,247,239,0.7)';
-    ctx.font = '600 34px Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('· FINISHED READING ·', W / 2, 150);
+      // Header label
+      ctx.fillStyle = 'rgba(251,247,239,0.7)';
+      ctx.font = '600 34px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('· FINISHED READING ·', W / 2, 150);
 
-    // Book spine graphic
-    const spineColor = COLOR_HEX[book.coverColor] || '#A34B18';
-    const sx = W / 2 - 90;
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(sx + 8, 210 + 8, 180, 250);
-    ctx.fillStyle = spineColor;
-    ctx.fillRect(sx, 210, 180, 250);
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(sx, 210, 10, 250);
+      // Cover: real image if available, else colored spine block
+      const cw = 200;
+      const ch = 300;
+      const cx = W / 2 - cw / 2;
+      const cy = 185;
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(cx + 10, cy + 10, cw, ch); // shadow
+      if (coverImg) {
+        ctx.drawImage(coverImg, cx, cy, cw, ch);
+        ctx.strokeStyle = 'rgba(251,247,239,0.3)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cx, cy, cw, ch);
+      } else {
+        ctx.fillStyle = COLOR_HEX[book.coverColor] || '#A34B18';
+        ctx.fillRect(cx, cy, cw, ch);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(cx, cy, 10, ch);
+      }
 
-    // Title (wrapped)
+      // Title (wrapped)
     ctx.fillStyle = cream;
     ctx.font = '700 76px Georgia, serif';
     const titleLines = wrapText(ctx, book.title, W - 200).slice(0, 3);
@@ -141,16 +152,41 @@ export default function ShareCard({ book, onClose }) {
       ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, H - 150);
     }
 
-    // Wordmark
-    ctx.fillStyle = gold;
-    ctx.font = '700 40px Georgia, serif';
-    ctx.fillText('📚 BookNook', W / 2, H - 90);
+      // Wordmark
+      ctx.fillStyle = gold;
+      ctx.font = '700 40px Georgia, serif';
+      ctx.fillText('📚 BookNook', W / 2, H - 90);
+    },
+    [book]
+  );
 
-    setReady(true);
-  }, [book]);
+  useEffect(() => {
+    if (book.coverUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // OpenLibrary allows CORS, so the export stays clean
+      img.onload = () => {
+        draw(img);
+        setReady(true);
+      };
+      img.onerror = () => {
+        draw(null); // fall back to the colored spine
+        setReady(true);
+      };
+      img.src = book.coverUrl;
+    } else {
+      draw(null);
+    }
+  }, [book, draw]);
 
   const download = () => {
-    const url = canvasRef.current.toDataURL('image/png');
+    let url;
+    try {
+      url = canvasRef.current.toDataURL('image/png');
+    } catch {
+      // Cover tainted the canvas (no CORS) — redraw without it and export.
+      draw(null);
+      url = canvasRef.current.toDataURL('image/png');
+    }
     const a = document.createElement('a');
     a.href = url;
     a.download = `${book.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-booknook.png`;

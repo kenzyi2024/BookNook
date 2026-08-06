@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Search, MessageSquare, ArrowLeft, Loader2, Send } from 'lucide-react';
+import { BookOpen, Search, MessageSquare, ArrowLeft, Loader2, Send, RotateCcw } from 'lucide-react';
 import { renderMarkdown } from '../../lib/markdown';
 import { useApi } from '../../hooks/useApi';
 
@@ -13,8 +13,14 @@ export default function AIToolsView({ book, onUpdate }) {
   const [activeTool, setActiveTool] = useState(null);
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
+  // Seminar chat is persisted on the book, so it survives reopening the tool.
+  const [chatHistory, setChatHistory] = useState(book.seminarChat || []);
   const [chatInput, setChatInput] = useState('');
+
+  const restartChat = () => {
+    setChatHistory([]);
+    onUpdate({ seminarChat: [] });
+  };
 
   const handleRecap = async () => {
     setActiveTool('recap');
@@ -77,7 +83,9 @@ export default function AIToolsView({ book, onUpdate }) {
 
     try {
       const res = await api.generateAI(prompt);
-      setChatHistory([...newHistory, { role: 'ai', content: res }]);
+      const final = [...newHistory, { role: 'ai', content: res }];
+      setChatHistory(final);
+      onUpdate({ seminarChat: final }); // persist so the chat is saved
     } catch (err) {
       setChatHistory([
         ...newHistory,
@@ -157,12 +165,22 @@ export default function AIToolsView({ book, onUpdate }) {
         </div>
       ) : (
         <div>
-          <button
-            onClick={() => setActiveTool(null)}
-            className="mb-4 flex items-center gap-2 text-stone-500 hover:text-ink text-sm font-medium"
-          >
-            <ArrowLeft size={16} /> Back to Tools
-          </button>
+          <div className="mb-4 flex items-center justify-between">
+            <button
+              onClick={() => setActiveTool(null)}
+              className="flex items-center gap-2 text-stone-500 hover:text-ink text-sm font-medium"
+            >
+              <ArrowLeft size={16} /> Back to Tools
+            </button>
+            {activeTool === 'seminar' && chatHistory.length > 0 && (
+              <button
+                onClick={restartChat}
+                className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-status-dnf transition-colors"
+              >
+                <RotateCcw size={14} /> Restart chat
+              </button>
+            )}
+          </div>
 
           <div className="bg-stone-50 p-6 md:p-8 rounded-2xl border border-stone-200 min-h-[300px]">
             {loading && !result && chatHistory.length === 0 ? (

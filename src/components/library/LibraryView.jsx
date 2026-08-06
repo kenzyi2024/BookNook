@@ -1,54 +1,62 @@
 import { useState } from 'react';
-import { BookOpenCheck, Library, Sparkles, Loader2, Filter } from 'lucide-react';
+import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid } from 'lucide-react';
 import Shelf from './Shelf';
 import SuggestionsPanel from './SuggestionsPanel';
 import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { useApi } from '../../hooks/useApi';
 import { useToast } from '../ui/ToastProvider';
 
-/**
- * The main library screen: a "Currently Reading" shelf and a filterable
- * "Collection" shelf, each with AI suggestions when empty.
- */
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'reading', label: 'Reading' },
+  { id: 'read', label: 'Finished' },
+  { id: 'want_to_read', label: 'Want to Read' },
+  { id: 'dnf', label: 'DNF' },
+];
+
+// Random seed for suggestion variety (module scope keeps it out of render purity checks).
+const makeSeed = () => Math.random().toString(36).slice(2);
+
+// Order + presentation for the separated view
+const STATUS_SHELVES = [
+  { id: 'reading', title: 'Currently Reading', icon: BookOpenCheck },
+  { id: 'want_to_read', title: 'Up Next', icon: Library },
+  { id: 'read', title: 'Finished', icon: Library },
+  { id: 'dnf', title: 'Set Aside', icon: Library },
+];
+
 export default function LibraryView({ books, onSelect, onAddBook }) {
   const toast = useToast();
   const api = useApi();
+  const [filter, setFilter] = useState('all');
+  const [separated, setSeparated] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [loadingType, setLoadingType] = useState(null);
   const [suggestionsType, setSuggestionsType] = useState(null);
-  const [collectionFilter, setCollectionFilter] = useState('all');
 
-  const readingBooks = books.filter((b) => b.status === 'reading');
-  let otherBooks = books.filter((b) => b.status !== 'reading');
-  if (collectionFilter !== 'all') {
-    otherBooks = otherBooks.filter((b) => b.status === collectionFilter);
-  }
+  const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
 
   const getSuggestions = async (type) => {
     setLoadingType(type);
     setSuggestionsType(type);
     setSuggestions([]);
-
     const existing = books.map((b) => `"${b.title}"`).join(', ');
-    const seed = Math.random();
+    const seed = makeSeed();
     const prompt =
       type === 'history'
-        ? `I have these books in my library: ${books
-            .map((b) => `"${b.title}" by ${b.author}`)
-            .join(', ')}. Recommend 3 specific new books I might enjoy based on this. DO NOT recommend any of: ${existing}. Ensure variety (Seed: ${seed}). Return ONLY a JSON array of objects with keys "title", "author", "totalPages", "genre". No markdown.`
-        : `Recommend 3 highly popular must-read classic or best-selling books. DO NOT recommend any of: ${existing}. Ensure variety (Seed: ${seed}). Return ONLY a JSON array of objects with keys "title", "author", "totalPages", "genre". No markdown.`;
-
+        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}). Return ONLY a JSON array of {title, author, totalPages, genre}. No markdown.`
+        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). Return ONLY a JSON array of {title, author, totalPages, genre}. No markdown.`;
     try {
       const raw = await api.generateAI(prompt);
-      const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(clean);
-      const safe = Array.isArray(parsed)
-        ? parsed.filter((s) => !books.some((b) => b.title.toLowerCase() === s.title.toLowerCase()))
-        : [];
-      setSuggestions(safe);
+      const parsed = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
+      setSuggestions(
+        Array.isArray(parsed)
+          ? parsed.filter((s) => !books.some((b) => b.title.toLowerCase() === s.title.toLowerCase()))
+          : []
+      );
     } catch (e) {
-      console.error('Suggestion request failed', e);
-      toast.error(e.message || "The AI sent back data we couldn't read. Try again.");
+      console.error('Suggestion failed', e);
+      toast.error(e.message || "Couldn't fetch suggestions. Try again.");
     } finally {
       setLoadingType(null);
     }
@@ -59,106 +67,127 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     if (ok) {
       setSuggestions((prev) => {
         const next = prev.filter((s) => s.title !== book.title);
-        if (next.length === 0) setSuggestionsType(null);
+        if (!next.length) setSuggestionsType(null);
         return next;
       });
     }
   };
 
+  const suggestBlock = (type) => (
+    <>
+      {suggestionsType !== type && !loadingType && (
+        <button
+          onClick={() => getSuggestions(type)}
+          className="flex items-center gap-2 text-sm bg-surface border border-brand-200 text-brand-700 px-4 py-2 rounded-full hover:bg-brand-50 transition-colors shadow-sm"
+        >
+          <Sparkles size={16} className="text-brand-400" />
+          {type === 'history' ? 'Suggest from my history' : 'Discover popular books'}
+        </button>
+      )}
+      {loadingType === type && (
+        <div className="flex items-center gap-2 text-sm text-brand-600 mt-1 bg-brand-50 px-4 py-2 rounded-full">
+          <Loader2 className="animate-spin" size={16} /> Finding books…
+        </div>
+      )}
+      {suggestionsType === type && suggestions.length > 0 && (
+        <SuggestionsPanel
+          title={type === 'history' ? 'Based on your history' : 'Popular books'}
+          suggestions={suggestions}
+          loading={loadingType === type}
+          onRefresh={() => getSuggestions(type)}
+          onClose={() => { setSuggestions([]); setSuggestionsType(null); }}
+          onAdd={addSuggestion}
+        />
+      )}
+    </>
+  );
+
+  const ToggleBtn = (
+    <button
+      onClick={() => setSeparated((s) => !s)}
+      className="flex items-center gap-2 text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full px-4 py-2 hover:border-brand-300 transition-colors"
+    >
+      {separated ? <LayoutGrid size={15} /> : <Rows3 size={15} />}
+      {separated ? 'One shelf' : 'Separate shelves'}
+    </button>
+  );
+
+  // --- Separated view: a shelf per status ---
+  if (separated) {
+    const shelves = STATUS_SHELVES.map((s) => ({ ...s, list: books.filter((b) => b.status === s.id) })).filter((s) => s.list.length);
+    return (
+      <div className="mt-8 mb-20 animate-in fade-in duration-500">
+        <div className="flex justify-end mb-4">{ToggleBtn}</div>
+        {shelves.length === 0 ? (
+          <EmptyLibrary suggestBlock={suggestBlock} />
+        ) : (
+          <div className="space-y-28">
+            {shelves.map((s, i) => (
+              <Shelf
+                key={s.id}
+                icon={<s.icon size={30} className="text-brand-600 drop-shadow-sm shrink-0" />}
+                title={s.title}
+                books={s.list}
+                onSelect={onSelect}
+                wave={i % 2 === 0 ? <ShelfWave1 /> : <ShelfWave2 />}
+                emptyState={null}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // --- Unified view: one shelf + filter chips ---
   return (
-    <div className="space-y-32 mt-10 mb-20 animate-in fade-in duration-500">
+    <div className="mt-8 mb-20 animate-in fade-in duration-500">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => {
+            const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  filter === f.id ? 'bg-brand-500 text-white' : 'bg-surface text-stone-600 border border-stone-200 hover:border-brand-300'
+                }`}
+              >
+                {f.label} <span className={filter === f.id ? 'text-white/70' : 'text-stone-400'}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+        {ToggleBtn}
+      </div>
+
       <Shelf
-        icon={<BookOpenCheck size={32} className="text-brand-600 drop-shadow-sm shrink-0" />}
-        title="Currently Reading"
-        books={readingBooks}
+        icon={<Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />}
+        title={FILTERS.find((f) => f.id === filter).label === 'All' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
+        books={filtered}
         onSelect={onSelect}
         wave={<ShelfWave1 />}
         emptyState={
-          <>
-            <div className="text-stone-400 italic">No books currently being read.</div>
-            {books.length > 0 && suggestionsType !== 'history' && !loadingType && (
-              <button
-                onClick={() => getSuggestions('history')}
-                className="flex items-center gap-2 text-sm bg-surface border border-brand-200 text-brand-700 px-4 py-2 rounded-full hover:bg-brand-50 transition-colors shadow-sm"
-              >
-                <Sparkles size={16} className="text-brand-400" /> Explore books based on history
-              </button>
-            )}
-            {loadingType === 'history' && (
-              <div className="flex items-center gap-2 text-sm text-brand-600 mt-2 bg-brand-50 px-4 py-2 rounded-full">
-                <Loader2 className="animate-spin" size={16} /> Finding matches...
-              </div>
-            )}
-            {suggestionsType === 'history' && suggestions.length > 0 && (
-              <SuggestionsPanel
-                title="Suggested from your history"
-                suggestions={suggestions}
-                loading={loadingType === 'history'}
-                onRefresh={() => getSuggestions('history')}
-                onClose={() => {
-                  setSuggestions([]);
-                  setSuggestionsType(null);
-                }}
-                onAdd={addSuggestion}
-              />
-            )}
-          </>
+          books.length === 0 ? (
+            <EmptyLibrary suggestBlock={suggestBlock} inline />
+          ) : (
+            <div className="text-stone-400 italic">No books in this filter.</div>
+          )
         }
       />
+    </div>
+  );
+}
 
-      <Shelf
-        icon={<Library size={32} className="text-brand-600 drop-shadow-sm shrink-0" />}
-        title="The Collection"
-        books={otherBooks}
-        onSelect={onSelect}
-        wave={<ShelfWave2 />}
-        action={
-          <div className="flex items-center gap-2 text-sm bg-paper/80 border border-brand-900/10 rounded-full px-3 py-1.5 shadow-sm backdrop-blur-sm">
-            <Filter size={14} className="text-stone-500" />
-            <select
-              value={collectionFilter}
-              onChange={(e) => setCollectionFilter(e.target.value)}
-              className="bg-transparent border-none text-stone-700 font-medium focus:outline-none cursor-pointer text-sm"
-            >
-              <option value="all">All Books</option>
-              <option value="read">Finished</option>
-              <option value="want_to_read">Unread</option>
-              <option value="dnf">Did Not Finish (DNF)</option>
-            </select>
-          </div>
-        }
-        emptyState={
-          <>
-            <div className="text-stone-400 italic">No books in this view.</div>
-            {suggestionsType !== 'popular' && !loadingType && collectionFilter === 'all' && (
-              <button
-                onClick={() => getSuggestions('popular')}
-                className="flex items-center gap-2 text-sm bg-surface border border-brand-200 text-brand-700 px-4 py-2 rounded-full hover:bg-brand-50 transition-colors shadow-sm"
-              >
-                <Sparkles size={16} className="text-brand-400" /> Discover popular books
-              </button>
-            )}
-            {loadingType === 'popular' && (
-              <div className="flex items-center gap-2 text-sm text-brand-600 mt-2 bg-brand-50 px-4 py-2 rounded-full">
-                <Loader2 className="animate-spin" size={16} /> Fetching recommendations...
-              </div>
-            )}
-            {suggestionsType === 'popular' && suggestions.length > 0 && (
-              <SuggestionsPanel
-                title="Popular books"
-                suggestions={suggestions}
-                loading={loadingType === 'popular'}
-                onRefresh={() => getSuggestions('popular')}
-                onClose={() => {
-                  setSuggestions([]);
-                  setSuggestionsType(null);
-                }}
-                onAdd={addSuggestion}
-              />
-            )}
-          </>
-        }
-      />
+function EmptyLibrary({ suggestBlock, inline }) {
+  return (
+    <div className={`flex flex-col ${inline ? 'items-start' : 'items-center'} gap-3 ${inline ? '' : 'py-16 text-center'}`}>
+      <p className="text-stone-500">Your shelves are empty — add a book or get a recommendation.</p>
+      <div className="flex flex-wrap gap-2">
+        {suggestBlock('popular')}
+        {suggestBlock('history')}
+      </div>
     </div>
   );
 }

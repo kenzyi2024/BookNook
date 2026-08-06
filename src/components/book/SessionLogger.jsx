@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Clock, Headphones, Hash, Percent, BookMarked, Plus } from 'lucide-react';
+import { Clock, Headphones, Hash, Percent, BookMarked, Plus, Timer } from 'lucide-react';
 import { fmtShortDate, hmsToSeconds, secondsToHms } from '../../lib/format';
+import ReadingTimer from './ReadingTimer';
 
 const MODES = [
   { id: 'page', label: 'Current page', icon: <BookMarked size={15} /> },
@@ -24,6 +25,40 @@ export default function SessionLogger({ book, onUpdate }) {
   const [minutes, setMinutes] = useState('');
   const [audioTotal, setAudioTotal] = useState(book.audioDurationSec ? secondsToHms(book.audioDurationSec) : '');
   const [audioAt, setAudioAt] = useState('');
+  const [showTimer, setShowTimer] = useState(false);
+
+  // Quick scrub: move the slider to jump current page (no session recorded).
+  const scrub = (newPage) => {
+    newPage = Math.min(total, Math.max(0, newPage));
+    const updates = { currentPage: newPage };
+    if (newPage >= total && book.status !== 'read') {
+      updates.status = 'read';
+      updates.finishedAt = new Date().toISOString();
+    } else if (newPage > 0 && newPage < total && book.status === 'want_to_read') {
+      updates.status = 'reading';
+    }
+    onUpdate(updates);
+  };
+
+  // Log a timed session from the focus timer.
+  const logTimed = (mins, pagesRead) => {
+    const newPage = Math.min(total, current + (pagesRead || 0));
+    const percent = Math.round(((pagesRead || 0) / total) * 1000) / 10;
+    const updates = {
+      currentPage: newPage,
+      sessions: [
+        ...(book.sessions || []),
+        { date: new Date().toISOString(), endPage: newPage, pagesRead: pagesRead || 0, percent, minutes: mins || 0, format: 'page' },
+      ],
+    };
+    if (newPage >= total && book.status !== 'read') {
+      updates.status = 'read';
+      updates.finishedAt = new Date().toISOString();
+    } else if (newPage > 0 && newPage < total && book.status === 'want_to_read') {
+      updates.status = 'reading';
+    }
+    onUpdate(updates);
+  };
 
   const sessions = [...(book.sessions || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -94,12 +129,35 @@ export default function SessionLogger({ book, onUpdate }) {
           {current} / {total} pages · {progress}%
         </span>
       </div>
-      <div className="h-4 w-full bg-stone-100 rounded-full shadow-inner overflow-hidden mb-8">
+      <div className="relative h-6 flex items-center group mb-2">
+        <div className="absolute w-full h-4 bg-stone-100 rounded-full shadow-inner pointer-events-none" />
         <div
-          className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-500"
+          className="absolute left-0 h-4 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full pointer-events-none transition-all"
           style={{ width: `${progress}%` }}
         />
+        <div
+          className="absolute h-6 w-6 bg-surface border-4 border-brand-500 rounded-full shadow-md pointer-events-none group-hover:scale-110 transition-transform"
+          style={{ left: `calc(${progress}% - 12px)` }}
+        />
+        <input
+          type="range"
+          min="0"
+          max={total}
+          value={current}
+          onChange={(e) => scrub(parseInt(e.target.value, 10))}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          aria-label="Reading progress"
+        />
       </div>
+      <p className="text-xs text-stone-400 mb-6">Drag to jump, or log a session below.</p>
+
+      {/* Focus timer button */}
+      <button
+        onClick={() => setShowTimer(true)}
+        className="w-full mb-5 flex items-center justify-center gap-2 bg-ink text-white font-semibold py-3 rounded-2xl hover:bg-stone-800 transition-colors"
+      >
+        <Timer size={18} /> Start reading timer
+      </button>
 
       {/* Session logger */}
       <div className="bg-paper border border-stone-200 rounded-2xl p-5">
@@ -203,6 +261,10 @@ export default function SessionLogger({ book, onUpdate }) {
             ))}
           </div>
         </div>
+      )}
+
+      {showTimer && (
+        <ReadingTimer book={book} onClose={() => setShowTimer(false)} onLogSession={logTimed} />
       )}
     </div>
   );

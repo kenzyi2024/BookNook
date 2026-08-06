@@ -1,6 +1,7 @@
 import { BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer } from 'lucide-react';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
+import StreakCalendar from './StreakCalendar';
 
 // Distinct categorical palette for the genre pie.
 const PIE = ['#C05D22', '#2F855A', '#3B6FB0', '#B23A48', '#7C3AED', '#0D9488', '#CA8A04'];
@@ -198,13 +199,20 @@ export default function MetricsView({ books }) {
         <StatTile icon={<Timer size={15} className="text-brand-500" />} label="Longest Session" value={longest ? `${longest}` : '—'} sub={longest ? 'min' : ''} />
       </div>
 
-      {/* Genre pie + status donut */}
+      {/* Streak + status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card title="Genres Read" icon={<Book size={18} className="text-brand-500" />} className="md:col-span-2">
-          <Pie data={genreData} />
-        </Card>
+        <div className="md:col-span-2">
+          <StreakCalendar books={books} />
+        </div>
         <Card title="Library Breakdown" icon={<BookOpen size={18} className="text-brand-500" />}>
           <Pie data={statusData} donut />
+        </Card>
+      </div>
+
+      {/* Genre pie */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card title="Genres Read" icon={<Book size={18} className="text-brand-500" />}>
+          <Pie data={genreData} />
         </Card>
       </div>
 

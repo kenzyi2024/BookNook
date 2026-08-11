@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Library, BarChart2, LogOut, KeyRound } from 'lucide-react';
+import { Plus, Library, BarChart2, LogOut, KeyRound, Settings } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 import ChangePasswordModal from '../auth/ChangePasswordModal';
+import AccountModal from '../auth/AccountModal';
 
 /**
  * Top navigation: logo, view switcher, add-book, and a simple user menu
@@ -10,6 +11,7 @@ import ChangePasswordModal from '../auth/ChangePasswordModal';
 export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -70,11 +72,15 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((o) => !o)}
-              className="w-10 h-10 rounded-full bg-ink text-white font-bold flex items-center justify-center hover:opacity-90 transition-opacity"
+              className="w-10 h-10 rounded-full bg-ink text-white font-bold flex items-center justify-center hover:opacity-90 transition-opacity overflow-hidden"
               aria-label="Account menu"
               aria-expanded={menuOpen}
             >
-              {initial}
+              {user?.profilePicture ? (
+                <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                initial
+              )}
             </button>
 
             {menuOpen && (
@@ -83,6 +89,15 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
                   <p className="text-xs text-stone-400 uppercase tracking-wider font-semibold">Signed in as</p>
                   <p className="text-sm font-medium text-ink truncate">{label}</p>
                 </div>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShowAccount(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <Settings size={16} /> Account & appearance
+                </button>
                 <button
                   onClick={() => {
                     setMenuOpen(false);
@@ -109,6 +124,7 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
     </nav>
 
     {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+    {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
     </>
   );
 }

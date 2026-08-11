@@ -1,0 +1,125 @@
+import { useState, useRef } from 'react';
+import { X, Camera, Check, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../ui/ToastProvider';
+import { THEMES } from '../../lib/themes';
+import { fileToDataUrl } from '../../lib/image';
+
+/**
+ * Account & personalization: profile picture, display name, and theme picker.
+ */
+export default function AccountModal({ onClose }) {
+  const { user, updateProfile } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const toast = useToast();
+  const fileRef = useRef(null);
+
+  const [name, setName] = useState(user?.name || user?.username || '');
+  const [pic, setPic] = useState(user?.profilePicture || '');
+  const [busy, setBusy] = useState(false);
+
+  const initial = (name || user?.email || '?').charAt(0).toUpperCase();
+
+  const onPickFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await fileToDataUrl(file, 256, 0.85);
+      setPic(dataUrl);
+      await updateProfile({ profilePicture: dataUrl });
+      toast.success('Photo updated.');
+    } catch (err) {
+      toast.error(err.message || 'Could not update photo.');
+    }
+  };
+
+  const saveName = async () => {
+    setBusy(true);
+    try {
+      await updateProfile({ name });
+      toast.success('Profile saved.');
+    } catch (err) {
+      toast.error(err.message || 'Could not save.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const chooseTheme = async (id) => {
+    setTheme(id);
+    try {
+      await updateProfile({ theme: id });
+    } catch {
+      /* theme still applied locally */
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
+      <div className="bg-surface w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-display font-bold text-xl text-ink">Account & appearance</h3>
+          <button onClick={onClose} className="text-stone-400 hover:text-ink" aria-label="Close"><X size={20} /></button>
+        </div>
+
+        {/* Avatar */}
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="relative w-20 h-20 rounded-full overflow-hidden bg-ink text-white flex items-center justify-center group shrink-0"
+            aria-label="Change photo"
+          >
+            {pic ? (
+              <img src={pic} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-display font-bold text-2xl">{initial}</span>
+            )}
+            <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <Camera size={20} />
+            </span>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} className="hidden" />
+          <div className="min-w-0">
+            <p className="text-sm text-stone-500">Signed in as</p>
+            <p className="font-medium text-ink truncate">{user?.email}</p>
+            <button onClick={() => fileRef.current?.click()} className="text-sm text-brand-600 font-semibold hover:underline mt-0.5">
+              Change photo
+            </button>
+          </div>
+        </div>
+
+        {/* Name */}
+        <label className="block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-1">Display name</label>
+        <div className="flex gap-2 mb-6">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            className="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          />
+          <button onClick={saveName} disabled={busy} className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold px-4 rounded-xl flex items-center gap-2">
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Save
+          </button>
+        </div>
+
+        {/* Theme picker */}
+        <label className="block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2">Theme</label>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.entries(THEMES).map(([id, t]) => (
+            <button
+              key={id}
+              onClick={() => chooseTheme(id)}
+              className={`rounded-2xl p-3 border-2 transition-all flex flex-col items-center gap-2 ${
+                theme === id ? 'border-brand-500 shadow-sm' : 'border-stone-200 hover:border-stone-300'
+              }`}
+            >
+              <span className="w-8 h-8 rounded-full shadow-inner" style={{ backgroundColor: t.swatch }} />
+              <span className="text-xs font-medium text-stone-600">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

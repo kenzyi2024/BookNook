@@ -6,7 +6,7 @@ import BookSpine from './BookSpine';
  * A horizontal, scrollable shelf of book spines with a title, optional header
  * action (e.g. a filter), and a custom empty state.
  */
-export default function Shelf({ icon, title, action, books, onSelect, emptyState, wave }) {
+export default function Shelf({ icon, title, action, books, onSelect, emptyState, wave, extras }) {
   const rowRef = useRef(null);
 
   const scroll = (dir) => {
@@ -14,6 +14,7 @@ export default function Shelf({ icon, title, action, books, onSelect, emptyState
   };
 
   const hasBooks = books.length > 0;
+  const hasExtras = Boolean(extras && extras.length);
 
   return (
     <div className="relative group">
@@ -49,12 +50,12 @@ export default function Shelf({ icon, title, action, books, onSelect, emptyState
       <div
         ref={rowRef}
         className={`flex items-end gap-2 px-20 z-30 relative overflow-x-auto flex-nowrap scroll-smooth no-scrollbar ${
-          hasBooks ? 'pt-32 -mt-32 min-h-[280px]' : 'min-h-[240px]'
+          hasBooks || hasExtras ? 'pt-32 -mt-32 min-h-[280px]' : 'min-h-[240px]'
         }`}
       >
-        {hasBooks ? (
-          books.map((book) => <BookSpine key={book._id} book={book} onSelect={onSelect} />)
-        ) : (
+        {hasBooks && books.map((book) => <BookSpine key={book._id} book={book} onSelect={onSelect} />)}
+        {hasExtras && extras}
+        {!hasBooks && !hasExtras && (
           <div className="flex flex-col items-start gap-3 mb-8 w-full max-w-md">{emptyState}</div>
         )}
       </div>

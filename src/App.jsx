@@ -8,12 +8,19 @@ import BookDetailView from './components/book/BookDetailView';
 import AddBookModal from './components/book/AddBookModal';
 import { useApi } from './hooks/useApi';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { useToast } from './components/ui/ToastProvider';
 
 export default function App() {
   const { isAuthenticated, loading, user, logout } = useAuth();
+  const { setTheme } = useTheme();
   const api = useApi();
   const toast = useToast();
+
+  // Apply the signed-in user's saved theme.
+  useEffect(() => {
+    if (user?.theme) setTheme(user.theme);
+  }, [user?.theme, setTheme]);
 
   const [books, setBooks] = useState([]);
   const [activeTab, setActiveTab] = useState('library');

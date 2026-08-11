@@ -79,6 +79,26 @@ export function AuthProvider({ children }) {
     [authenticate]
   );
 
+  const googleLogin = useCallback((credential) => authenticate('google', { credential }), [authenticate]);
+
+  const updateProfile = useCallback(
+    async (updates) => {
+      const res = await fetch(`${API_URL}/api/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Could not save profile.');
+      setUser(data);
+      return data;
+    },
+    [token]
+  );
+
   const changePassword = useCallback(
     async (currentPassword, newPassword) => {
       const res = await fetch(`${API_URL}/api/auth/change-password`, {
@@ -103,6 +123,8 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(user),
     login,
     register,
+    googleLogin,
+    updateProfile,
     logout,
     changePassword,
   };

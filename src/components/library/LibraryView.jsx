@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid } from 'lucide-react';
+import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout } from 'lucide-react';
 import Shelf from './Shelf';
 import SuggestionsPanel from './SuggestionsPanel';
+import GadgetItem from './GadgetItem';
+import GadgetModal from './GadgetModal';
 import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { useApi } from '../../hooks/useApi';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/ToastProvider';
 
 const FILTERS = [
@@ -28,11 +31,20 @@ const STATUS_SHELVES = [
 export default function LibraryView({ books, onSelect, onAddBook }) {
   const toast = useToast();
   const api = useApi();
+  const { user, updateProfile } = useAuth();
   const [filter, setFilter] = useState('all');
   const [separated, setSeparated] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [loadingType, setLoadingType] = useState(null);
   const [suggestionsType, setSuggestionsType] = useState(null);
+  const [showGadget, setShowGadget] = useState(false);
+
+  const decor = user?.shelfDecor || [];
+  const addGadget = (g) => updateProfile({ shelfDecor: [...decor, g] });
+  const removeGadget = (idx) => updateProfile({ shelfDecor: decor.filter((_, i) => i !== idx) });
+  const gadgetExtras = decor.map((g, i) => (
+    <GadgetItem key={g._id || i} gadget={g} onRemove={() => removeGadget(i)} />
+  ));
 
   const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
 
@@ -159,15 +171,51 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
             );
           })}
         </div>
-        {ToggleBtn}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => getSuggestions('history')}
+            disabled={books.length === 0}
+            className="flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
+          >
+            <Sparkles size={15} /> For You
+          </button>
+          <button
+            onClick={() => setShowGadget(true)}
+            className="flex items-center gap-1.5 text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full px-4 py-2 hover:border-brand-300 transition-colors"
+          >
+            <Sprout size={15} /> Add gadget
+          </button>
+          {ToggleBtn}
+        </div>
       </div>
+
+      {/* For You recommendations */}
+      {(loadingType === 'history' || (suggestionsType === 'history' && suggestions.length > 0)) && (
+        <div className="mb-6">
+          {loadingType === 'history' ? (
+            <div className="flex items-center gap-2 text-sm text-brand-600 bg-brand-50 px-4 py-2 rounded-full w-max">
+              <Loader2 className="animate-spin" size={16} /> Finding books you'll love…
+            </div>
+          ) : (
+            <SuggestionsPanel
+              title="For You — based on your reading"
+              suggestions={suggestions}
+              loading={false}
+              onRefresh={() => getSuggestions('history')}
+              onClose={() => { setSuggestions([]); setSuggestionsType(null); }}
+              onAdd={addSuggestion}
+            />
+          )}
+        </div>
+      )}
 
       <Shelf
         icon={<Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />}
-        title={FILTERS.find((f) => f.id === filter).label === 'All' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
+        title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
         books={filtered}
         onSelect={onSelect}
         wave={<ShelfWave1 />}
+        extras={filter === 'all' ? gadgetExtras : []}
         emptyState={
           books.length === 0 ? (
             <EmptyLibrary suggestBlock={suggestBlock} inline />
@@ -176,6 +224,13 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
           )
         }
       />
+
+      {showGadget && (
+        <GadgetModal
+          onAdd={addGadget}
+          onClose={() => setShowGadget(false)}
+        />
+      )}
     </div>
   );
 }

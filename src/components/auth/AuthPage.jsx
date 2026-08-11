@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
 import LandingPage from './LandingPage';
+import GoogleSignIn from './GoogleSignIn';
 import { useAuth } from '../../context/AuthContext';
 import { isValidEmail, passwordStrength } from '../../lib/validation';
 
@@ -9,13 +10,24 @@ import { isValidEmail, passwordStrength } from '../../lib/validation';
  * our own /api/auth endpoints.
  */
 export default function AuthPage() {
-  const { login, register } = useAuth();
+  const { login, register, googleLogin } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const handleGoogle = useCallback(
+    async (credential) => {
+      try {
+        await googleLogin(credential);
+      } catch (err) {
+        setError(err.message || 'Google sign-in failed.');
+      }
+    },
+    [googleLogin]
+  );
 
   const isRegister = mode === 'register';
   const emailInvalid = isRegister && email.length > 0 && !isValidEmail(email);
@@ -134,6 +146,13 @@ export default function AuthPage() {
               )}
             </button>
           </form>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-stone-200" />
+            <span className="text-xs text-stone-400 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-stone-200" />
+          </div>
+          <GoogleSignIn onCredential={handleGoogle} />
 
           <p className="text-center text-sm text-stone-500 mt-6">
             {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}

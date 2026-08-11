@@ -8,39 +8,57 @@ import { renderMarkdown } from '../../lib/markdown';
  * (with light **markdown** formatting), and saved quotes tied to page numbers.
  * Styled to feel like writing in a real journal.
  */
+const leatherStyle = {
+  background:
+    'linear-gradient(145deg, #5C3A23 0%, #472C18 50%, #3B2413 100%)',
+  boxShadow: 'inset 0 0 40px rgba(0,0,0,0.35)',
+};
+
 export default function NotesJournal({ book, onUpdate }) {
   const [view, setView] = useState('journal'); // 'journal' | 'quotes'
 
+  const tabs = [
+    { id: 'journal', label: 'Journal', icon: NotebookPen },
+    { id: 'quotes', label: 'Quotes', icon: Quote, count: book.quotes?.length || 0 },
+  ];
+
   return (
-    <div className="animate-in fade-in">
-      <div className="flex gap-2 mb-5">
-        <TabBtn active={view === 'journal'} onClick={() => setView('journal')} icon={<NotebookPen size={16} />}>
-          Journal
-        </TabBtn>
-        <TabBtn active={view === 'quotes'} onClick={() => setView('quotes')} icon={<Quote size={16} />}>
-          Quotes {book.quotes?.length ? `(${book.quotes.length})` : ''}
-        </TabBtn>
+    <div className="animate-in fade-in rounded-[26px] p-3 md:p-4 shadow-2xl" style={leatherStyle}>
+      {/* faux-stitch border */}
+      <div className="rounded-[20px] border border-dashed border-amber-100/20 flex overflow-hidden min-h-[500px]">
+        {/* Section tabs down the side, like a leather notebook's dividers */}
+        <div className="flex flex-col gap-2 p-3 bg-black/15">
+          {tabs.map((t) => {
+            const active = view === t.id;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setView(t.id)}
+                className={`flex items-center gap-2 px-3 py-3 rounded-l-xl text-sm font-semibold transition-all ${
+                  active
+                    ? 'bg-[#FBF7EC] text-brand-700 -mr-3 pr-6 shadow'
+                    : 'bg-amber-900/30 text-amber-100/80 hover:bg-amber-900/50'
+                }`}
+              >
+                <Icon size={16} />
+                <span className="hidden sm:inline">{t.label}</span>
+                {t.count ? <span className={`text-xs ${active ? 'text-brand-400' : 'text-amber-200/60'}`}>{t.count}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Page */}
+        <div className="flex-1 bg-[#FBF7EC] p-5 md:p-7 min-w-0">
+          {view === 'journal' ? (
+            <JournalView book={book} onUpdate={onUpdate} />
+          ) : (
+            <QuotesView book={book} onUpdate={onUpdate} />
+          )}
+        </div>
       </div>
-
-      {view === 'journal' ? (
-        <JournalView book={book} onUpdate={onUpdate} />
-      ) : (
-        <QuotesView book={book} onUpdate={onUpdate} />
-      )}
     </div>
-  );
-}
-
-function TabBtn({ active, onClick, icon, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-        active ? 'bg-brand-500 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-      }`}
-    >
-      {icon} {children}
-    </button>
   );
 }
 

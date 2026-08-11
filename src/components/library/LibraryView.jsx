@@ -129,7 +129,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     const shelves = STATUS_SHELVES.map((s) => ({ ...s, list: books.filter((b) => b.status === s.id) })).filter((s) => s.list.length);
     return (
       <div className="mt-8 mb-20 animate-in fade-in duration-500">
-        <div className="flex justify-end mb-4">{ToggleBtn}</div>
+        <div className="relative z-40 flex justify-end mb-4">{ToggleBtn}</div>
         {shelves.length === 0 ? (
           <EmptyLibrary suggestBlock={suggestBlock} />
         ) : (
@@ -154,7 +154,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   // --- Unified view: one shelf + filter chips ---
   return (
     <div className="mt-8 mb-20 animate-in fade-in duration-500">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="relative z-40 flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => {
             const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
@@ -191,7 +191,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
 
       {/* For You recommendations */}
       {(loadingType === 'history' || (suggestionsType === 'history' && suggestions.length > 0)) && (
-        <div className="mb-6">
+        <div className="relative z-40 mb-6">
           {loadingType === 'history' ? (
             <div className="flex items-center gap-2 text-sm text-brand-600 bg-brand-50 px-4 py-2 rounded-full w-max">
               <Loader2 className="animate-spin" size={16} /> Finding books you'll love…

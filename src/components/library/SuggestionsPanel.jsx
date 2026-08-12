@@ -41,11 +41,12 @@ export default function SuggestionsPanel({
         {suggestions.map((s, i) => (
           <div
             key={`${s.title}-${i}`}
-            className="flex items-center justify-between bg-paper p-2.5 rounded-xl border border-stone-100 group hover:border-brand-200 transition-colors"
+            className="flex items-start justify-between bg-paper p-2.5 rounded-xl border border-stone-100 group hover:border-brand-200 transition-colors"
           >
             <div className="pr-4 min-w-0">
               <p className="font-semibold text-sm text-ink truncate">{s.title}</p>
               <p className="text-xs text-stone-500 truncate">{s.author}</p>
+              {s.blurb && <p className="text-xs text-stone-400 mt-1 line-clamp-2 leading-snug">{s.blurb}</p>}
             </div>
             <button
               onClick={() =>

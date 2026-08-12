@@ -61,8 +61,8 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     const seed = makeSeed();
     const prompt =
       type === 'history'
-        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}). Return ONLY a JSON array of {title, author, totalPages, genre}. No markdown.`
-        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). Return ONLY a JSON array of {title, author, totalPages, genre}. No markdown.`;
+        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}). Each "blurb" is one enticing, spoiler-free sentence (max 14 words). Return ONLY a JSON array of {title, author, totalPages, genre, blurb}. No markdown.`
+        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). Each "blurb" is one enticing, spoiler-free sentence (max 14 words). Return ONLY a JSON array of {title, author, totalPages, genre, blurb}. No markdown.`;
     try {
       const raw = await api.generateAI(prompt);
       const parsed = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());

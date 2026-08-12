@@ -98,12 +98,12 @@ function Pie({ data, donut = false }) {
           </div>
         )}
       </div>
-      <div className="flex-1 w-full flex flex-col gap-2">
+      <div className="flex-1 w-full min-w-0 flex flex-col gap-2">
         {data.map((d, i) => (
           <div key={d.label} className="flex items-center gap-3 text-sm">
             <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: d.color || PIE[i % PIE.length] }} />
-            <span className="font-medium text-ink flex-1 truncate">{d.label}</span>
-            <span className="text-stone-500 tabular-nums">{Math.round((d.value / total) * 100)}%</span>
+            <span className="font-medium text-ink flex-1 min-w-0 truncate">{d.label}</span>
+            <span className="text-stone-500 tabular-nums shrink-0">{Math.round((d.value / total) * 100)}%</span>
           </div>
         ))}
       </div>

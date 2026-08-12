@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { resolveCover, needsPersist, markPersisted } from '../../lib/covers';
 
 // Small accent color per reading status, shown as a dot near the spine foot.
@@ -50,11 +51,26 @@ export default function BookSpine({ book, onSelect, onPersistCover }) {
 
   const tinted = Boolean(cover.spineColor);
 
+  // The hover card is rendered in a portal so it can't be clipped by the shelf's
+  // scroll container or trapped beneath the control bar's stacking context.
+  const btnRef = useRef(null);
+  const [tip, setTip] = useState(null);
+  const showTip = () => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setTip({ left: r.left + r.width / 2, top: r.top });
+  };
+  const hideTip = () => setTip(null);
+
   return (
     <button
+      ref={btnRef}
       onClick={() => onSelect(book)}
+      onMouseEnter={showTip}
+      onMouseLeave={hideTip}
+      onFocus={showTip}
+      onBlur={hideTip}
       aria-label={`Open ${book.title}`}
-      className={`${tinted ? '' : book.coverColor} rounded-sm shadow-[2px_0_6px_rgba(0,0,0,0.35)] cursor-pointer hover:-translate-y-3 transition-transform duration-300 relative group/spine flex flex-col items-center`}
+      className={`${tinted ? '' : book.coverColor} rounded-sm shadow-[2px_0_6px_rgba(0,0,0,0.35)] cursor-pointer hover:-translate-y-3 transition-transform duration-300 relative flex flex-col items-center`}
       style={{
         width: `${width}px`,
         height: `${height}px`,
@@ -94,34 +110,47 @@ export default function BookSpine({ book, onSelect, onPersistCover }) {
         </div>
       )}
 
-      {/* hover card — now with the real cover */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover/spine:opacity-100 transition-opacity duration-200 w-52 p-3 bg-stone-900 text-white text-xs rounded-lg shadow-xl z-50 pointer-events-none text-left">
-        <div className="flex gap-3">
-          {cover.coverUrl ? (
-            <img
-              src={cover.coverUrl}
-              alt={`${book.title} cover`}
-              className="w-12 h-[72px] object-cover rounded shadow shrink-0"
-            />
-          ) : (
-            <div
-              className={`w-12 h-[72px] rounded shadow shrink-0 ${tinted ? '' : book.coverColor}`}
-              style={tinted ? { backgroundColor: cover.spineColor } : undefined}
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-sm leading-snug mb-0.5 line-clamp-2">{book.title}</p>
-            <p className="text-stone-300 truncate mb-2">{book.author}</p>
-            <div className="w-full bg-stone-700 rounded-full h-1.5 mb-1 overflow-hidden">
-              <div className="bg-brand-400 h-1.5 rounded-full" style={{ width: `${progress}%` }} />
+      {/* hover card — portaled to the body so it floats above everything */}
+      {tip &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              left: tip.left,
+              top: tip.top - 12,
+              transform: 'translate(-50%, -100%)',
+              zIndex: 70,
+            }}
+            className="w-52 p-3 bg-stone-900 text-white text-xs rounded-lg shadow-xl pointer-events-none text-left"
+          >
+            <div className="flex gap-3">
+              {cover.coverUrl ? (
+                <img
+                  src={cover.coverUrl}
+                  alt={`${book.title} cover`}
+                  className="w-12 h-[72px] object-cover rounded shadow shrink-0"
+                />
+              ) : (
+                <div
+                  className={`w-12 h-[72px] rounded shadow shrink-0 ${tinted ? '' : book.coverColor}`}
+                  style={tinted ? { backgroundColor: cover.spineColor } : undefined}
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-sm leading-snug mb-0.5 line-clamp-2">{book.title}</p>
+                <p className="text-stone-300 truncate mb-2">{book.author}</p>
+                <div className="w-full bg-stone-700 rounded-full h-1.5 mb-1 overflow-hidden">
+                  <div className="bg-brand-400 h-1.5 rounded-full" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="flex justify-between text-[10px] text-stone-400">
+                  <span>{book.currentPage || 0} / {book.totalPages}</span>
+                  <span>{progress}%</span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between text-[10px] text-stone-400">
-              <span>{book.currentPage || 0} / {book.totalPages}</span>
-              <span>{progress}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+          </div>,
+          document.body
+        )}
     </button>
   );
 }

@@ -90,7 +90,14 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
         : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). "blurb" is one enticing spoiler-free sentence (max 14 words); "summary" is a 2-3 sentence spoiler-free description of the book. Return ONLY a JSON array of {title, author, totalPages, genre, blurb, summary}. No markdown.`;
     try {
       const raw = await api.generateAI(prompt);
-      const parsed = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
+      // The model sometimes wraps the array in prose/code fences and leaves raw
+      // newlines inside string values — both break JSON.parse, so clean first.
+      const fenced = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const start = fenced.indexOf('[');
+      const end = fenced.lastIndexOf(']');
+      const jsonStr = start >= 0 && end >= 0 ? fenced.slice(start, end + 1) : fenced;
+      // eslint-disable-next-line no-control-regex -- strip raw control chars the model emits inside strings
+      const parsed = JSON.parse(jsonStr.replace(/[\u0000-\u001F]+/g, ' '));
       setSuggestions(
         Array.isArray(parsed)
           ? parsed.filter((s) => !books.some((b) => b.title.toLowerCase() === s.title.toLowerCase()))

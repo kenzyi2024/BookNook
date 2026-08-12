@@ -21,6 +21,53 @@ const FILTERS = [
 // Random seed for suggestion variety (module scope keeps it out of render purity checks).
 const makeSeed = () => Math.random().toString(36).slice(2);
 
+// Labeled-line format the AI returns for recommendations. Far more robust than
+// JSON, which the model routinely breaks with unescaped quotes/newlines in the
+// longer summary field.
+const SUGGEST_FORMAT =
+  'For EACH recommended book output exactly these labeled lines and nothing else, ' +
+  'with a line containing only "---" between books:\n' +
+  'Title: <title>\n' +
+  'Author: <author>\n' +
+  'Pages: <approximate page count, a number>\n' +
+  'Genre: <a single genre>\n' +
+  'Blurb: <one enticing spoiler-free sentence, max 14 words>\n' +
+  'Summary: <2-3 sentence spoiler-free description>';
+
+// Parse the labeled-line format into suggestion objects. Tolerant of missing
+// separators, extra prose, and multi-line summaries.
+function parseSuggestions(raw) {
+  const items = [];
+  let cur = null;
+  const commit = () => {
+    if (cur && cur.title) {
+      delete cur._last;
+      items.push(cur);
+    }
+  };
+  for (const line of (raw || '').split(/\r?\n/)) {
+    const m = line.match(/^\s*(Title|Author|Pages|Genre|Blurb|Summary)\s*:\s*(.*)$/i);
+    if (!m) {
+      const t = line.trim();
+      if (/^-{2,}$/.test(t)) { if (cur) cur._last = null; continue; } // book separator
+      if (cur && cur._last === 'summary' && t) cur.summary += ' ' + t;
+      continue;
+    }
+    const key = m[1].toLowerCase();
+    const val = m[2].trim().replace(/^["'<]+|["'>]+$/g, '');
+    if (key === 'title') {
+      commit();
+      cur = { title: val, author: '', totalPages: 0, genre: '', blurb: '', summary: '', _last: 'title' };
+    } else if (cur) {
+      if (key === 'pages') cur.totalPages = parseInt(val.replace(/[^\d]/g, ''), 10) || 0;
+      else cur[key] = val;
+      cur._last = key;
+    }
+  }
+  commit();
+  return items;
+}
+
 // Order + presentation for the separated view
 const STATUS_SHELVES = [
   { id: 'reading', title: 'Currently Reading', icon: BookOpenCheck },
@@ -86,23 +133,14 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     const seed = makeSeed();
     const prompt =
       type === 'history'
-        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}). "blurb" is one enticing spoiler-free sentence (max 14 words); "summary" is a 2-3 sentence spoiler-free description of the book. Return ONLY a JSON array of {title, author, totalPages, genre, blurb, summary}. No markdown.`
-        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). "blurb" is one enticing spoiler-free sentence (max 14 words); "summary" is a 2-3 sentence spoiler-free description of the book. Return ONLY a JSON array of {title, author, totalPages, genre, blurb, summary}. No markdown.`;
+        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`
+        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`;
     try {
       const raw = await api.generateAI(prompt);
-      // The model sometimes wraps the array in prose/code fences and leaves raw
-      // newlines inside string values — both break JSON.parse, so clean first.
-      const fenced = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-      const start = fenced.indexOf('[');
-      const end = fenced.lastIndexOf(']');
-      const jsonStr = start >= 0 && end >= 0 ? fenced.slice(start, end + 1) : fenced;
-      // eslint-disable-next-line no-control-regex -- strip raw control chars the model emits inside strings
-      const parsed = JSON.parse(jsonStr.replace(/[\u0000-\u001F]+/g, ' '));
-      setSuggestions(
-        Array.isArray(parsed)
-          ? parsed.filter((s) => !books.some((b) => b.title.toLowerCase() === s.title.toLowerCase()))
-          : []
+      const parsed = parseSuggestions(raw).filter(
+        (s) => !books.some((b) => b.title.toLowerCase() === s.title.toLowerCase())
       );
+      setSuggestions(parsed);
     } catch (e) {
       console.error('Suggestion failed', e);
       toast.error(e.message || "Couldn't fetch suggestions. Try again.");

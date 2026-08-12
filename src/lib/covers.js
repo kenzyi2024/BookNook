@@ -41,6 +41,24 @@ const persistedIds = new Set();
 export const needsPersist = (id) => Boolean(id) && !persistedIds.has(id);
 export const markPersisted = (id) => persistedIds.add(id);
 
+/** Look up a (usually better/more current) cover from Google Books. Returns '' if none. */
+async function lookupGoogleCover(title, author) {
+  if (!title) return '';
+  try {
+    const q = `intitle:${title}${author ? ` inauthor:${author}` : ''}`;
+    const res = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?maxResults=1&printType=books&q=${encodeURIComponent(q)}`
+    );
+    if (!res.ok) return '';
+    const data = await res.json();
+    const links = data.items?.[0]?.volumeInfo?.imageLinks;
+    const raw = links?.thumbnail || links?.smallThumbnail || '';
+    return raw ? raw.replace(/^http:/, 'https:').replace('&edge=curl', '') : '';
+  } catch {
+    return '';
+  }
+}
+
 /** Look up a front-cover image URL from Open Library. Returns '' if none. */
 export async function lookupCoverUrl(title, author) {
   if (!title) return '';
@@ -115,11 +133,12 @@ export async function resolveCover(title, author, knownUrl = '') {
     return { coverUrl: knownUrl || cached.display, spineColor: cached.color };
   }
   // Sample the tint from an Open Library image (CORS-friendly, so the canvas
-  // isn't tainted); prefer the caller's known URL — e.g. a nicer Google Books
-  // cover — for the actual display image.
+  // isn't tainted); prefer a stored URL, then a nicer/more-current Google Books
+  // cover, then Open Library, for the actual display image.
   const olUrl = await lookupCoverUrl(title, author);
   const color = olUrl ? await dominantColor(olUrl) : '';
-  const display = knownUrl || olUrl;
+  const googleUrl = knownUrl ? '' : await lookupGoogleCover(title, author);
+  const display = knownUrl || googleUrl || olUrl;
   mem[k] = { display, olUrl, color };
   saveCacheSoon();
   return { coverUrl: display, spineColor: color };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles, Share2 } from 'lucide-react';
+import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles, Share2, Headphones } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
@@ -114,8 +114,8 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
                 </option>
               ))}
             </select>
-            <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100">
-              {book.isAudio ? '🎧 ' : ''}{book.totalPages} pages
+            <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100 inline-flex items-center gap-1">
+              {book.isAudio && <Headphones size={13} className="text-stone-400" />}{book.totalPages} pages
             </span>
             {book.genre && (
               <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100">

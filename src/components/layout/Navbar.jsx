@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Library, BarChart2, LogOut, KeyRound, Settings } from 'lucide-react';
+import { Plus, Library, BarChart2, LogOut, KeyRound, Settings, Moon, Sun } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 import ChangePasswordModal from '../auth/ChangePasswordModal';
 import AccountModal from '../auth/AccountModal';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * Top navigation: logo, view switcher, add-book, and a simple user menu
@@ -12,6 +13,7 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
+  const { dark, toggleDark } = useTheme();
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
 
   return (
     <>
-    <nav className="bg-paper/85 backdrop-blur-md border-b border-brand-900/10 sticky top-0 z-40">
+    <nav className="bg-paper/85 backdrop-blur-md border-b border-brand-900/10 sticky top-0 z-[60]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
         <button
           onClick={() => onTab('library')}
@@ -72,7 +74,7 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((o) => !o)}
-              className="w-10 h-10 rounded-full bg-ink text-white font-bold flex items-center justify-center hover:opacity-90 transition-opacity overflow-hidden"
+              className="w-10 h-10 rounded-full bg-brand-500 text-white font-bold flex items-center justify-center hover:opacity-90 transition-opacity overflow-hidden"
               aria-label="Account menu"
               aria-expanded={menuOpen}
             >
@@ -89,6 +91,19 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
                   <p className="text-xs text-stone-400 uppercase tracking-wider font-semibold">Signed in as</p>
                   <p className="text-sm font-medium text-ink truncate">{label}</p>
                 </div>
+                <button
+                  onClick={toggleDark}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+                  role="switch"
+                  aria-checked={dark}
+                >
+                  <span className="flex items-center gap-2">
+                    {dark ? <Sun size={16} /> : <Moon size={16} />} Dark mode
+                  </span>
+                  <span className={`relative w-9 h-5 rounded-full transition-colors ${dark ? 'bg-brand-500' : 'bg-stone-300'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${dark ? 'left-4' : 'left-0.5'}`} />
+                  </span>
+                </button>
                 <button
                   onClick={() => {
                     setMenuOpen(false);

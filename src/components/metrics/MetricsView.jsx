@@ -386,14 +386,34 @@ export default function MetricsView({ books }) {
         <StatTile icon={<XCircle size={15} className="text-status-dnf" />} label="Set Aside (DNF)" value={dnf.length} />
       </div>
 
-      {/* Streak + status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Streak + status + this year */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         <div className="md:col-span-2">
           <StreakCalendar books={books} />
         </div>
-        <Card title="Library Breakdown" icon={<BookOpen size={18} className="text-brand-500" />}>
-          <Pie data={statusData} donut />
-        </Card>
+        <div className="flex flex-col gap-6">
+          <Card title="Library Breakdown" icon={<BookOpen size={18} className="text-brand-500" />}>
+            <Pie data={statusData} donut />
+          </Card>
+          <Card title="This Year" icon={<Sparkles size={18} className="text-brand-500" />} className="flex-1">
+            <div className="flex flex-col divide-y divide-stone-100">
+              {[
+                ['Finished this year', finishedThisYear],
+                projectedYear > 0 ? ['On pace for', `~${projectedYear}`] : null,
+                ['Pages read', totalPagesRead.toLocaleString()],
+                hoursRead > 0 ? ['Time reading', `${hoursRead}h`] : null,
+                ['Avg rating', avgRating !== '—' ? `${avgRating}★` : '—'],
+              ]
+                .filter(Boolean)
+                .map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between py-2.5">
+                    <span className="text-sm text-stone-500">{label}</span>
+                    <span className="font-display font-bold text-lg text-ink">{value}</span>
+                  </div>
+                ))}
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Genres + Ratings + Authors — a filled 3-up row */}

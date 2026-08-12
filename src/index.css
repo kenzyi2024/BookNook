@@ -63,7 +63,7 @@ body {
 /*
   Candlelit dark mode ambiance.
   A soft warm radial glow, as if a single lamp lit the page. The `dark` class is
-  toggled by applyTheme() when a theme sets `dark: true`.
+  toggled by applyTheme() when the dark-mode toggle is on.
 */
 .dark {
   color-scheme: dark; /* native selects, scrollbars, date pickers go dark */

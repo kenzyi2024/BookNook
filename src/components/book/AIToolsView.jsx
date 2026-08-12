@@ -113,8 +113,8 @@ export default function AIToolsView({ book, onUpdate }) {
       icon: <Search size={26} />,
       title: 'Marginalia',
       desc: 'Themes, motifs, and symbols to watch for as you read.',
-      tone: 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100',
-      iconBg: 'bg-blue-100 text-blue-700',
+      tone: 'bg-surface border-stone-200 text-ink hover:border-brand-300',
+      iconBg: 'bg-brand-100 text-brand-700',
     },
   ];
 
@@ -141,23 +141,23 @@ export default function AIToolsView({ book, onUpdate }) {
             disabled={book.status !== 'read'}
             className={`flex flex-col items-center text-center p-8 rounded-2xl border transition-colors group ${
               book.status === 'read'
-                ? 'bg-purple-50 border-purple-100 hover:bg-purple-100 cursor-pointer'
+                ? 'bg-surface border-stone-200 hover:border-brand-300 cursor-pointer'
                 : 'bg-stone-50 border-stone-200 opacity-60 cursor-not-allowed'
             }`}
           >
             <div
               className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform ${
                 book.status === 'read'
-                  ? 'bg-purple-100 text-purple-700 group-hover:scale-110'
+                  ? 'bg-brand-100 text-brand-700 group-hover:scale-110'
                   : 'bg-stone-200 text-stone-400'
               }`}
             >
               <MessageSquare size={26} />
             </div>
-            <h4 className={`font-display font-bold text-lg mb-2 ${book.status === 'read' ? 'text-purple-900' : 'text-stone-500'}`}>
+            <h4 className={`font-display font-bold text-lg mb-2 ${book.status === 'read' ? 'text-ink' : 'text-stone-500'}`}>
               The Reading Circle
             </h4>
-            <p className={`text-sm ${book.status === 'read' ? 'text-purple-700' : 'text-stone-400'}`}>
+            <p className={`text-sm ${book.status === 'read' ? 'text-stone-500' : 'text-stone-400'}`}>
               {book.status === 'read'
                 ? 'Discuss the ending and deeper meanings with AI.'
                 : 'Finish the book first to unlock discussion!'}
@@ -209,7 +209,7 @@ export default function AIToolsView({ book, onUpdate }) {
                       <div
                         className={`max-w-[80%] p-4 rounded-2xl ${
                           msg.role === 'user'
-                            ? 'bg-purple-600 text-white rounded-tr-sm'
+                            ? 'bg-brand-500 text-white rounded-tr-sm'
                             : 'bg-surface border border-stone-200 text-ink rounded-tl-sm'
                         }`}
                       >
@@ -233,12 +233,12 @@ export default function AIToolsView({ book, onUpdate }) {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Share your thoughts..."
-                    className="flex-1 bg-surface border border-stone-300 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    className="flex-1 bg-surface border border-stone-300 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400"
                   />
                   <button
                     type="submit"
                     disabled={loading || !chatInput.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-5 rounded-xl transition-colors"
+                    className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white px-5 rounded-xl transition-colors"
                   >
                     <Send size={20} />
                   </button>

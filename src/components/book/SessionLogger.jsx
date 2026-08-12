@@ -154,7 +154,7 @@ export default function SessionLogger({ book, onUpdate }) {
       {/* Focus timer button */}
       <button
         onClick={() => setShowTimer(true)}
-        className="w-full mb-5 flex items-center justify-center gap-2 bg-ink text-white font-semibold py-3 rounded-2xl hover:bg-stone-800 transition-colors"
+        className="w-full mb-5 flex items-center justify-center gap-2 bg-brand-500 text-white font-semibold py-3 rounded-2xl hover:bg-brand-600 transition-colors"
       >
         <Timer size={18} /> Start reading timer
       </button>
@@ -252,8 +252,8 @@ export default function SessionLogger({ book, onUpdate }) {
                 className="flex items-center justify-between bg-surface border border-stone-100 rounded-xl px-4 py-2.5 text-sm"
               >
                 <span className="text-stone-500">{fmtShortDate(s.date)}</span>
-                <span className="text-ink font-medium">
-                  {s.format === 'audio' ? '🎧 ' : ''}
+                <span className="text-ink font-medium inline-flex items-center gap-1">
+                  {s.format === 'audio' && <Headphones size={13} className="text-stone-400" />}
                   {s.pagesRead} pages{s.percent ? ` · ${s.percent}%` : ''}
                   {s.minutes ? ` · ${s.minutes} min` : ''}
                 </span>

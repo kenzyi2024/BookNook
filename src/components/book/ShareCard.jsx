@@ -1,6 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Download, X } from 'lucide-react';
 import { fmtDate } from '../../lib/format';
+import logoImg from '../../assets/logo.png';
+
+// Preloaded once; drawn onto the share canvas in place of a text/emoji wordmark.
+const logoImage = new Image();
+logoImage.src = logoImg;
 
 // Map the stored Tailwind spine classes to hex for canvas drawing.
 const COLOR_HEX = {
@@ -149,32 +154,40 @@ export default function ShareCard({ book, onClose }) {
     if (book.finishedAt) {
       ctx.fillStyle = 'rgba(251,247,239,0.75)';
       ctx.font = '30px Georgia, serif';
-      ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, H - 150);
+      ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, H - 180);
     }
 
-      // Wordmark
-      ctx.fillStyle = gold;
-      ctx.font = '700 40px Georgia, serif';
-      ctx.fillText('📚 BookNook', W / 2, H - 90);
+      // Logo wordmark (falls back to text if the image hasn't loaded)
+      if (logoImage.complete && logoImage.naturalWidth) {
+        const lh = 88;
+        const lw = (logoImage.naturalWidth / logoImage.naturalHeight) * lh;
+        ctx.drawImage(logoImage, W / 2 - lw / 2, H - 150, lw, lh);
+      } else {
+        ctx.fillStyle = gold;
+        ctx.font = '700 44px Georgia, serif';
+        ctx.fillText('BookNook', W / 2, H - 90);
+      }
     },
     [book]
   );
 
   useEffect(() => {
+    // Make sure the logo is decoded before we paint, so it lands on the export.
+    const withLogo = (cb) => {
+      if (logoImage.complete && logoImage.naturalWidth) cb();
+      else {
+        logoImage.onload = cb;
+        logoImage.onerror = cb;
+      }
+    };
     if (book.coverUrl) {
       const img = new Image();
       img.crossOrigin = 'anonymous'; // OpenLibrary allows CORS, so the export stays clean
-      img.onload = () => {
-        draw(img);
-        setReady(true);
-      };
-      img.onerror = () => {
-        draw(null); // fall back to the colored spine
-        setReady(true);
-      };
+      img.onload = () => withLogo(() => { draw(img); setReady(true); });
+      img.onerror = () => withLogo(() => { draw(null); setReady(true); });
       img.src = book.coverUrl;
     } else {
-      draw(null);
+      withLogo(() => { draw(null); setReady(true); });
     }
   }, [book, draw]);
 

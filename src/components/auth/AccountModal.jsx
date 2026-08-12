@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Check, Loader2 } from 'lucide-react';
+import { X, Camera, Check, Loader2, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../ui/ToastProvider';
@@ -11,7 +11,7 @@ import { fileToDataUrl } from '../../lib/image';
  */
 export default function AccountModal({ onClose }) {
   const { user, updateProfile } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, dark, toggleDark } = useTheme();
   const toast = useToast();
   const fileRef = useRef(null);
 
@@ -67,7 +67,7 @@ export default function AccountModal({ onClose }) {
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => fileRef.current?.click()}
-            className="relative w-20 h-20 rounded-full overflow-hidden bg-ink text-white flex items-center justify-center group shrink-0"
+            className="relative w-20 h-20 rounded-full overflow-hidden bg-brand-500 text-white flex items-center justify-center group shrink-0"
             aria-label="Change photo"
           >
             {pic ? (
@@ -103,8 +103,23 @@ export default function AccountModal({ onClose }) {
           </button>
         </div>
 
+        {/* Dark mode toggle */}
+        <button
+          onClick={toggleDark}
+          className="w-full flex items-center justify-between gap-2 mb-5 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 hover:border-brand-300 transition-colors"
+          role="switch"
+          aria-checked={dark}
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">
+            {dark ? <Sun size={16} /> : <Moon size={16} />} Dark mode
+          </span>
+          <span className={`relative w-10 h-5 rounded-full transition-colors ${dark ? 'bg-brand-500' : 'bg-stone-300'}`}>
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${dark ? 'left-5' : 'left-0.5'}`} />
+          </span>
+        </button>
+
         {/* Theme picker */}
-        <label className="block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2">Theme</label>
+        <label className="block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2">Color theme</label>
         <div className="grid grid-cols-3 gap-3">
           {Object.entries(THEMES).map(([id, t]) => (
             <button

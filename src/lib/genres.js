@@ -65,3 +65,58 @@ export function normalizeGenre(raw) {
   }
   return 'Other';
 }
+
+/* -------------------------------------------------------------------------- */
+/* AI genre self-heal                                                         */
+/*                                                                            */
+/* Metadata APIs give unreliable genres, so we let the app's own AI classify  */
+/* each book into the canonical list. Books tagged with a generic/unknown     */
+/* bucket get reclassified once; the result is remembered per-device so we    */
+/* never re-spend an AI call on the same book.                                */
+/* -------------------------------------------------------------------------- */
+
+const HEAL_KEY = 'booknook.genreHealed.v1';
+// These buckets are treated as "not confidently classified" and get one AI pass.
+const AMBIGUOUS = new Set(['Fiction', 'Nonfiction', 'Other', 'Unknown', '']);
+
+function loadHealed() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(HEAL_KEY)) || []);
+  } catch {
+    return new Set();
+  }
+}
+const healed = loadHealed();
+
+function saveHealed() {
+  try {
+    localStorage.setItem(HEAL_KEY, JSON.stringify([...healed]));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+/** Does this book still need an AI genre pass? */
+export function genreNeedsHeal(book) {
+  if (!book?._id || healed.has(book._id)) return false;
+  return AMBIGUOUS.has(book.genre) || !GENRE_OPTIONS.includes(book.genre);
+}
+
+export function markGenreHealed(id) {
+  healed.add(id);
+  saveHealed();
+}
+
+/**
+ * Classify a book into exactly one canonical genre via the AI. `generateAI` is
+ * the function from useApi(). Returns a canonical genre string.
+ */
+export async function classifyGenre(generateAI, title, author) {
+  const prompt =
+    `Classify the book "${title}"${author ? ` by ${author}` : ''} into exactly ONE genre ` +
+    `from this list: ${GENRE_OPTIONS.join(', ')}. ` +
+    `Reply with only the genre name exactly as written, nothing else.`;
+  const raw = await generateAI(prompt);
+  const cleaned = (raw || '').trim().replace(/^["'.]+|["'.]+$/g, '');
+  return GENRE_OPTIONS.includes(cleaned) ? cleaned : normalizeGenre(cleaned);
+}

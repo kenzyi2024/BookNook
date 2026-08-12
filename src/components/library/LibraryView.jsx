@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout } from 'lucide-react';
+import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
 import Shelf from './Shelf';
 import SuggestionsPanel from './SuggestionsPanel';
 import GadgetItem from './GadgetItem';
@@ -53,6 +54,30 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     api.updateBook(id, patch).catch(() => {});
   };
 
+  // Background genre self-heal: AI-classify books with generic/unknown genres
+  // into the canonical list, once each, throttled to be gentle on the API.
+  useEffect(() => {
+    const todo = books.filter(genreNeedsHeal);
+    if (!todo.length) return;
+    let cancelled = false;
+    (async () => {
+      for (const b of todo) {
+        if (cancelled) break;
+        markGenreHealed(b._id);
+        try {
+          const genre = await classifyGenre(api.generateAI, b.title, b.author);
+          if (genre && genre !== b.genre) api.updateBook(b._id, { genre }).catch(() => {});
+        } catch {
+          /* leave as-is on failure */
+        }
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [books, api]);
+
   const getSuggestions = async (type) => {
     setLoadingType(type);
     setSuggestionsType(type);
@@ -61,8 +86,8 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     const seed = makeSeed();
     const prompt =
       type === 'history'
-        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}). Each "blurb" is one enticing, spoiler-free sentence (max 14 words). Return ONLY a JSON array of {title, author, totalPages, genre, blurb}. No markdown.`
-        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). Each "blurb" is one enticing, spoiler-free sentence (max 14 words). Return ONLY a JSON array of {title, author, totalPages, genre, blurb}. No markdown.`;
+        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}). "blurb" is one enticing spoiler-free sentence (max 14 words); "summary" is a 2-3 sentence spoiler-free description of the book. Return ONLY a JSON array of {title, author, totalPages, genre, blurb, summary}. No markdown.`
+        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}). "blurb" is one enticing spoiler-free sentence (max 14 words); "summary" is a 2-3 sentence spoiler-free description of the book. Return ONLY a JSON array of {title, author, totalPages, genre, blurb, summary}. No markdown.`;
     try {
       const raw = await api.generateAI(prompt);
       const parsed = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());

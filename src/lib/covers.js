@@ -10,7 +10,7 @@
  * the book's existing `coverColor` and simply show no cover image.
  */
 
-const CACHE_KEY = 'booknook.covers.v2';
+const CACHE_KEY = 'booknook.covers.v3';
 
 function loadCache() {
   try {
@@ -35,6 +35,11 @@ function saveCacheSoon() {
 }
 
 const keyOf = (title, author) => `${title}|${author}`.toLowerCase().trim();
+
+// Per-session guard so we persist a resolved cover to the DB at most once per book.
+const persistedIds = new Set();
+export const needsPersist = (id) => Boolean(id) && !persistedIds.has(id);
+export const markPersisted = (id) => persistedIds.add(id);
 
 /** Look up a front-cover image URL from Open Library. Returns '' if none. */
 export async function lookupCoverUrl(title, author) {
@@ -106,12 +111,16 @@ export function dominantColor(url) {
 export async function resolveCover(title, author, knownUrl = '') {
   const k = keyOf(title, author);
   const cached = mem[k];
-  if (cached && cached.color !== undefined && (!knownUrl || cached.url === knownUrl)) {
-    return { coverUrl: cached.url, spineColor: cached.color };
+  if (cached && cached.color !== undefined && (!knownUrl || cached.display === knownUrl)) {
+    return { coverUrl: knownUrl || cached.display, spineColor: cached.color };
   }
-  const url = knownUrl || (await lookupCoverUrl(title, author));
-  const color = url ? await dominantColor(url) : '';
-  mem[k] = { url, color };
+  // Sample the tint from an Open Library image (CORS-friendly, so the canvas
+  // isn't tainted); prefer the caller's known URL — e.g. a nicer Google Books
+  // cover — for the actual display image.
+  const olUrl = await lookupCoverUrl(title, author);
+  const color = olUrl ? await dominantColor(olUrl) : '';
+  const display = knownUrl || olUrl;
+  mem[k] = { display, olUrl, color };
   saveCacheSoon();
-  return { coverUrl: url, spineColor: color };
+  return { coverUrl: display, spineColor: color };
 }

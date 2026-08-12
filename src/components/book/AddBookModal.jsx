@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Search, Loader2, Book, ArrowLeft, Plus, BookOpen } from 'lucide-react';
 import { SPINE_COLORS, randomSpine } from '../../lib/status';
+import { searchBooks } from '../../lib/bookSearch';
+import { GENRE_OPTIONS } from '../../lib/genres';
 
 /**
  * Add-book modal: search OpenLibrary, or add manually. Calls onAdd() which
@@ -15,12 +17,13 @@ export default function AddBookModal({ onClose, onAdd }) {
 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [genre, setGenre] = useState('');
+  const [genre, setGenre] = useState('Fiction');
   const [totalPages, setTotalPages] = useState('');
   const [coverUrl, setCoverUrl] = useState(null);
   const [coverColor, setCoverColor] = useState('bg-amber-700');
 
-  // Debounced OpenLibrary search
+  // Debounced search — Google Books (with Open Library fallback), already
+  // normalized into { id, title, author, totalPages, coverUrl, genre }.
   useEffect(() => {
     const t = setTimeout(async () => {
       if (searchQuery.trim().length <= 2) {
@@ -29,30 +32,11 @@ export default function AddBookModal({ onClose, onAdd }) {
       }
       setIsSearching(true);
       try {
-        // `q=` is a fuzzier match than `title=`, so close/misspelled titles still
-        // surface similar books; we pull more and let the user scroll.
-        const res = await fetch(
-          `https://openlibrary.org/search.json?q=${encodeURIComponent(searchQuery)}&limit=20&fields=key,title,author_name,number_of_pages_median,cover_i,subject`
-        );
-        const data = await res.json();
-        setSearchResults(
-          (data.docs || [])
-            .filter((item) => item.title)
-            .map((item) => ({
-              id: item.key || Math.random().toString(),
-              title: item.title,
-              author: item.author_name ? item.author_name.join(', ') : 'Unknown Author',
-              totalPages: item.number_of_pages_median || 300,
-              coverUrl: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
-              genre: item.subject ? item.subject[0] : 'Fiction',
-            }))
-        );
-      } catch (e) {
-        console.error('Search failed', e);
+        setSearchResults(await searchBooks(searchQuery));
       } finally {
         setIsSearching(false);
       }
-    }, 400);
+    }, 350);
 
     return () => clearTimeout(t);
   }, [searchQuery]);
@@ -60,9 +44,9 @@ export default function AddBookModal({ onClose, onAdd }) {
   const selectResult = (r) => {
     setTitle(r.title);
     setAuthor(r.author);
-    setGenre(r.genre || 'Fiction');
-    setTotalPages(r.totalPages);
-    setCoverUrl(r.coverUrl);
+    setGenre(GENRE_OPTIONS.includes(r.genre) ? r.genre : 'Fiction');
+    setTotalPages(r.totalPages || '');
+    setCoverUrl(r.coverUrl || null);
     setCoverColor(randomSpine());
     setShowManual(true);
   };
@@ -200,7 +184,11 @@ export default function AddBookModal({ onClose, onAdd }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1">Genre</label>
-                  <input required type="text" value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full bg-stone-100 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-400" />
+                  <select required value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full bg-stone-100 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-400">
+                    {GENRE_OPTIONS.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1">Total Pages</label>

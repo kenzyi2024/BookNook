@@ -48,6 +48,11 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
 
   const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
 
+  // Persist a resolved cover/tint to the DB (best-effort; self-heals existing books).
+  const persistCover = (id, patch) => {
+    api.updateBook(id, patch).catch(() => {});
+  };
+
   const getSuggestions = async (type) => {
     setLoadingType(type);
     setSuggestionsType(type);
@@ -141,6 +146,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
                 title={s.title}
                 books={s.list}
                 onSelect={onSelect}
+                onPersistCover={persistCover}
                 wave={i % 2 === 0 ? <ShelfWave1 /> : <ShelfWave2 />}
                 emptyState={null}
               />
@@ -214,6 +220,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
         title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
         books={filtered}
         onSelect={onSelect}
+        onPersistCover={persistCover}
         wave={<ShelfWave1 />}
         extras={filter === 'all' ? gadgetExtras : []}
         emptyState={

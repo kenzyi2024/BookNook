@@ -7,6 +7,7 @@ import SessionLogger from './SessionLogger';
 import NotesJournal from './NotesJournal';
 import ShareCard from './ShareCard';
 import { STATUS_OPTIONS } from '../../lib/status';
+import { resolveCover } from '../../lib/covers';
 
 /**
  * Full-page view for one book: cover, metadata, status/rating controls, and the
@@ -14,7 +15,8 @@ import { STATUS_OPTIONS } from '../../lib/status';
  */
 export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   const [activeSubTab, setActiveSubTab] = useState('progress');
-  const [coverUrl, setCoverUrl] = useState(book.coverUrl);
+  const [coverUrl, setCoverUrl] = useState(book.coverUrl || '');
+  const [imgLoaded, setImgLoaded] = useState(false);
   const [ratingInput, setRatingInput] = useState(book.rating ? String(book.rating) : '');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -23,21 +25,12 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   useEffect(() => {
     if (book.coverUrl || hasAttemptedFetch.current) return;
     hasAttemptedFetch.current = true;
-    (async () => {
-      try {
-        const query = encodeURIComponent(`${book.title} ${book.author}`);
-        const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=1`);
-        const data = await res.json();
-        const doc = data.docs?.[0];
-        if (doc?.cover_i) {
-          const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
-          setCoverUrl(url);
-          onUpdate({ coverUrl: url });
-        }
-      } catch (e) {
-        console.error('Failed to fetch cover', e);
+    resolveCover(book.title, book.author, '').then((r) => {
+      if (r.coverUrl) {
+        setCoverUrl(r.coverUrl);
+        onUpdate({ coverUrl: r.coverUrl, spineColor: r.spineColor });
       }
-    })();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book.title, book.author, book.coverUrl]);
 
@@ -77,9 +70,24 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 mb-8 bg-surface p-6 rounded-3xl shadow-sm border border-stone-100">
-        <div className={`w-48 h-72 ${book.coverColor} rounded-md shadow-2xl flex-shrink-0 flex items-center justify-center p-4 relative overflow-hidden`}>
+        <div
+          className={`w-48 h-72 rounded-md shadow-2xl flex-shrink-0 flex items-center justify-center p-4 relative overflow-hidden ${coverUrl ? '' : book.coverColor}`}
+          style={!coverUrl && book.spineColor ? { backgroundColor: book.spineColor } : undefined}
+        >
           {coverUrl ? (
-            <img src={coverUrl} alt={`Cover of ${book.title}`} className="absolute inset-0 w-full h-full object-cover z-20" />
+            <>
+              {/* colored placeholder that pulses until the cover decodes, then fades out */}
+              <div
+                className={`absolute inset-0 z-10 ${book.coverColor} ${imgLoaded ? 'opacity-0' : 'animate-pulse'} transition-opacity duration-500`}
+                style={book.spineColor ? { backgroundColor: book.spineColor } : undefined}
+              />
+              <img
+                src={coverUrl}
+                alt={`Cover of ${book.title}`}
+                onLoad={() => setImgLoaded(true)}
+                className={`absolute inset-0 w-full h-full object-cover z-20 transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </>
           ) : (
             <>
               <div className="absolute left-0 top-0 bottom-0 w-3 bg-black/20" />

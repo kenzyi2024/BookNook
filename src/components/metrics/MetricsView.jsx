@@ -1,6 +1,7 @@
 import { BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer } from 'lucide-react';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
+import { normalizeGenre } from '../../lib/genres';
 import StreakCalendar from './StreakCalendar';
 
 // Distinct categorical palette for the genre pie.
@@ -149,7 +150,7 @@ export default function MetricsView({ books }) {
   // Genre pie (top 6 + Other)
   const counted = books.filter((b) => b.status === 'read' || b.status === 'reading');
   const gc = {};
-  counted.forEach((b) => { const g = b.genre || 'Unknown'; gc[g] = (gc[g] || 0) + 1; });
+  counted.forEach((b) => { const g = normalizeGenre(b.genre); gc[g] = (gc[g] || 0) + 1; });
   const sortedG = Object.entries(gc).sort((a, b) => b[1] - a[1]);
   const topG = sortedG.slice(0, 6);
   const otherG = sortedG.slice(6).reduce((s, [, v]) => s + v, 0);

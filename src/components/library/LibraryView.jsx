@@ -90,7 +90,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   const [sort, setSort] = useState('added_desc');
 
   const decor = user?.shelfDecor || [];
-  const addGadget = (g) => updateProfile({ shelfDecor: [...decor, g] });
+  const addGadget = (g) => updateProfile({ shelfDecor: [...decor, { ...g, position: books.length }] });
   const removeGadget = (idx) => updateProfile({ shelfDecor: decor.filter((_, i) => i !== idx) });
   const moveGadget = (idx, dir) => {
     const next = decor.map((g, i) => {

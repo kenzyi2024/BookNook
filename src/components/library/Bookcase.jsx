@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import BookSpine from './BookSpine';
+import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { GadgetArt } from '../../lib/gadgetArt';
 import { frameClass } from '../../lib/gadgets';
 
@@ -71,9 +72,9 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
   for (let i = 0; i < seq.length; i += perRow) rows.push(seq.slice(i, i + perRow));
 
   return (
-    <div ref={ref} className="space-y-2">
+    <div ref={ref}>
       {rows.map((row, ri) => (
-        <div key={ri}>
+        <div key={ri} className="relative mb-16 md:mb-24">
           <div className="flex items-end gap-3 px-3 min-h-[248px]">
             {row.map((it) =>
               it.kind === 'book' ? (
@@ -89,11 +90,7 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
               )
             )}
           </div>
-          {/* wooden shelf plank */}
-          <div
-            className="h-4 rounded-sm shadow-md"
-            style={{ background: 'linear-gradient(#7a4a2b, #5f3720)' }}
-          />
+          {ri % 2 === 0 ? <ShelfWave1 /> : <ShelfWave2 />}
         </div>
       ))}
     </div>

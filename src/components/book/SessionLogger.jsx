@@ -171,7 +171,7 @@ export default function SessionLogger({ book, onUpdate }) {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 mode === m.id
                   ? 'bg-brand-500 text-white'
-                  : 'bg-white text-stone-600 border border-stone-200 hover:border-brand-300'
+                  : 'bg-surface text-stone-600 border border-stone-200 hover:border-brand-300'
               }`}
             >
               {m.icon} {m.label}
@@ -187,7 +187,7 @@ export default function SessionLogger({ book, onUpdate }) {
                 value={audioTotal}
                 onChange={(e) => setAudioTotal(e.target.value)}
                 placeholder="10:30:00"
-                className="w-full bg-white border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                className="w-full bg-surface border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </label>
             <label className="text-sm">
@@ -196,7 +196,7 @@ export default function SessionLogger({ book, onUpdate }) {
                 value={audioAt}
                 onChange={(e) => setAudioAt(e.target.value)}
                 placeholder="3:15:00"
-                className="w-full bg-white border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                className="w-full bg-surface border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </label>
           </div>
@@ -213,7 +213,7 @@ export default function SessionLogger({ book, onUpdate }) {
                     ? 'Pages read this session'
                     : 'Percent complete (0–100)'
               }
-              className="w-full bg-white border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className="w-full bg-surface border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </div>
         )}
@@ -226,7 +226,7 @@ export default function SessionLogger({ book, onUpdate }) {
               value={minutes}
               onChange={(e) => setMinutes(e.target.value)}
               placeholder="Minutes (optional)"
-              className="w-full bg-white border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className="w-full bg-surface border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </label>
           <button
@@ -249,7 +249,7 @@ export default function SessionLogger({ book, onUpdate }) {
             {sessions.map((s, i) => (
               <div
                 key={s._id || i}
-                className="flex items-center justify-between bg-white border border-stone-100 rounded-xl px-4 py-2.5 text-sm"
+                className="flex items-center justify-between bg-surface border border-stone-100 rounded-xl px-4 py-2.5 text-sm"
               >
                 <span className="text-stone-500">{fmtShortDate(s.date)}</span>
                 <span className="text-ink font-medium">

@@ -63,12 +63,53 @@ export const THEMES = {
       '--color-brand-900': '#47151F', '--color-paper': '#FBF1F1',
     },
   },
+
+  // Dark theme — a candlelit reading nook. Warm brown-black surfaces, parchment
+  // ink, and an amber glow. Sets `dark: true` so we can layer ambient lighting.
+  candlelit: {
+    label: 'Candlelit',
+    swatch: '#E39A3B',
+    dark: true,
+    vars: {
+      // Surfaces + primary text
+      '--color-paper': '#17110B', '--color-surface': '#221913', '--color-ink': '#F1E7D4',
+
+      // Brand ramp inverted for dark: tint-backgrounds (50/100) go deep, the
+      // mid/high tones glow amber for text + buttons.
+      '--color-brand-50': '#2A1D10', '--color-brand-100': '#3A2915', '--color-brand-200': '#5A3E1E',
+      '--color-brand-300': '#8A5E2A', '--color-brand-400': '#C0883A', '--color-brand-500': '#E39A3B',
+      '--color-brand-600': '#EBA94E', '--color-brand-700': '#F2BE72', '--color-brand-800': '#F7D49B',
+      '--color-brand-900': '#FBE6C4',
+
+      // Neutral (stone) ramp: 50–300 become warm dark surfaces/borders, 400–800
+      // become warm light text. 900 is left as default so tooltips/overlays that
+      // use bg-stone-900 stay dark.
+      '--color-stone-50': '#221913', '--color-stone-100': '#2A2018', '--color-stone-200': '#392B20',
+      '--color-stone-300': '#48372A', '--color-stone-400': '#9A8B78', '--color-stone-500': '#B7A992',
+      '--color-stone-600': '#CFC3AD', '--color-stone-700': '#E4D9C5', '--color-stone-800': '#EFE6D4',
+
+      // Warm amber wash for the light gradient stops used on the hero/insight bands.
+      '--color-amber-50': '#241A12', '--color-amber-100': '#33251A',
+
+      // Status accents, brightened for legibility on dark surfaces.
+      '--color-status-reading': '#E0912F', '--color-status-read': '#46A578',
+      '--color-status-want': '#6C9BD2', '--color-status-dnf': '#D66A6A',
+    },
+  },
 };
 
 export const DEFAULT_THEME = 'terracotta';
 
+// Tracks the custom properties set by the last theme so we can clear them when
+// switching (otherwise dark-mode overrides would linger on light themes).
+let appliedKeys = [];
+
 export function applyTheme(id) {
   const theme = THEMES[id] || THEMES[DEFAULT_THEME];
   const root = document.documentElement;
-  Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  appliedKeys.forEach((k) => root.style.removeProperty(k));
+  const vars = theme.vars || {};
+  Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  appliedKeys = Object.keys(vars);
+  root.classList.toggle('dark', Boolean(theme.dark));
 }

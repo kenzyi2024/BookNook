@@ -183,7 +183,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
             disabled={books.length === 0}
             className="flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
           >
-            <Sparkles size={15} /> For You
+            <Sparkles size={15} /> Up Next
           </button>
           <button
             onClick={() => setShowGadget(true)}
@@ -204,7 +204,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
             </div>
           ) : (
             <SuggestionsPanel
-              title="For You — based on your reading"
+              title="Up Next — based on your reading"
               suggestions={suggestions}
               loading={false}
               onRefresh={() => getSuggestions('history')}

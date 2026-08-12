@@ -1,4 +1,7 @@
-import { BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer } from 'lucide-react';
+import {
+  BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer,
+  Trophy, Ruler, Users, Layers, Library, Sparkles,
+} from 'lucide-react';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
 import { normalizeGenre } from '../../lib/genres';
@@ -7,7 +10,6 @@ import StreakCalendar from './StreakCalendar';
 // Distinct categorical palette for the genre pie.
 const PIE = ['#C05D22', '#2F855A', '#3B6FB0', '#B23A48', '#7C3AED', '#0D9488', '#CA8A04'];
 
-// Build a conic-gradient stop string (kept out of render to avoid mutating during render).
 function buildConicStops(data, total) {
   let acc = 0;
   return data
@@ -18,6 +20,43 @@ function buildConicStops(data, total) {
       return `${d.color || PIE[i % PIE.length]} ${start}% ${end}%`;
     })
     .join(', ');
+}
+
+// A small book cover thumbnail — real cover, else a tinted spine box with the title.
+function BookThumb({ book, className = '' }) {
+  if (!book) return <div className={`bg-stone-100 rounded ${className}`} />;
+  if (book.coverUrl) {
+    return <img src={book.coverUrl} alt="" className={`object-cover rounded shadow-sm ${className}`} />;
+  }
+  return (
+    <div
+      className={`rounded shadow-sm flex items-center justify-center p-1 ${book.coverColor || 'bg-stone-400'} ${className}`}
+      style={book.spineColor ? { backgroundColor: book.spineColor } : undefined}
+    >
+      <span className="text-white text-[9px] font-bold text-center leading-tight line-clamp-3 drop-shadow">{book.title}</span>
+    </div>
+  );
+}
+
+function Highlight({ label, icon, book, meta }) {
+  return (
+    <div className="bg-surface rounded-2xl shadow-sm border border-stone-200/70 p-4 flex gap-3 items-center hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <BookThumb book={book} className="w-12 h-[72px] shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 flex items-center gap-1.5 mb-1">
+          {icon} {label}
+        </p>
+        {book ? (
+          <>
+            <p className="font-display font-semibold text-ink text-sm leading-snug line-clamp-2">{book.title}</p>
+            <p className="text-xs text-stone-500 truncate">{meta}</p>
+          </>
+        ) : (
+          <p className="text-stone-400 italic text-sm">Nothing yet</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function StatTile({ icon, label, value, sub }) {
@@ -45,20 +84,14 @@ function Card({ title, icon, children, className = '' }) {
   );
 }
 
-// Pie / donut from a conic-gradient
 function Pie({ data, donut = false }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (!total) return <div className="h-44 flex items-center justify-center text-stone-400 italic">No data yet</div>;
-
   const stops = buildConicStops(data, total);
-
   return (
     <div className="flex flex-col sm:flex-row items-center gap-6">
       <div className="relative shrink-0">
-        <div
-          className="w-40 h-40 rounded-full shadow-inner"
-          style={{ background: `conic-gradient(${stops})` }}
-        />
+        <div className="w-40 h-40 rounded-full shadow-inner" style={{ background: `conic-gradient(${stops})` }} />
         {donut && (
           <div className="absolute inset-0 m-auto w-20 h-20 bg-surface rounded-full flex items-center justify-center">
             <span className="font-display font-bold text-xl text-ink">{total}</span>
@@ -78,7 +111,6 @@ function Pie({ data, donut = false }) {
   );
 }
 
-// Vertical bars for time series
 function Bars({ data, color = 'var(--color-brand-500)' }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   if (!data.some((d) => d.value > 0))
@@ -101,7 +133,6 @@ function Bars({ data, color = 'var(--color-brand-500)' }) {
   );
 }
 
-// Horizontal bars (rating distribution)
 function HBars({ data, color = 'var(--color-brand-500)' }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
@@ -119,7 +150,73 @@ function HBars({ data, color = 'var(--color-brand-500)' }) {
   );
 }
 
-// Build the last N month buckets ending this month
+function HeroStat({ value, label }) {
+  return (
+    <div>
+      <div className="font-display font-bold text-3xl md:text-4xl text-ink leading-none">{value}</div>
+      <div className="text-stone-500 text-xs font-semibold uppercase tracking-wider mt-1">{label}</div>
+    </div>
+  );
+}
+
+// A wall of the real covers of finished books — the most personal, "alive" view.
+function CoverWall({ books }) {
+  if (!books.length) return null;
+  return (
+    <div className="bg-surface p-6 rounded-2xl shadow-sm border border-stone-200/70">
+      <h3 className="text-base font-display font-semibold text-ink mb-5 flex items-center gap-2">
+        <Library size={18} className="text-brand-500" /> On Your Shelf
+        <span className="text-stone-400 text-sm font-normal">· {books.length} finished</span>
+      </h3>
+      <div className="flex flex-wrap gap-2.5">
+        {books.map((b) => (
+          <BookThumb
+            key={b._id}
+            book={b}
+            className="w-12 h-[72px] hover:-translate-y-1 transition-transform duration-200"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Auto-generated "reading personality" lines from data that's always present.
+function buildInsights({ read, dnf, avgPages, avgRating, topGenre, longestBook }) {
+  const out = [];
+  if (topGenre) out.push({ icon: <Book size={15} />, text: `You lean toward ${topGenre}` });
+  if (avgPages) {
+    out.push({
+      icon: <Ruler size={15} />,
+      text:
+        avgPages > 420
+          ? `Doorstopper devotee — ~${avgPages} pages a book`
+          : avgPages < 260
+            ? `Quick reads — ~${avgPages} pages a book`
+            : `Steady ~${avgPages} pages a book`,
+    });
+  }
+  if (avgRating !== '—') {
+    const r = Number(avgRating);
+    out.push({
+      icon: <Star size={15} />,
+      text: r >= 4.3 ? `Generous rater — ${avgRating}★ average` : r <= 3 ? `Tough critic — ${avgRating}★ average` : `Balanced rater — ${avgRating}★ average`,
+    });
+  }
+  const attempts = read.length + dnf.length;
+  if (attempts >= 3) {
+    const rate = Math.round((read.length / attempts) * 100);
+    out.push({
+      icon: <CheckCircle size={15} />,
+      text: rate >= 85 ? `A finisher — ${rate}% completion rate` : `You finish ${rate}% of what you start`,
+    });
+  }
+  if (longestBook?.totalPages) {
+    out.push({ icon: <Trophy size={15} />, text: `Biggest conquest: ${longestBook.title}` });
+  }
+  return out;
+}
+
 function lastMonths(n) {
   const out = [];
   const now = new Date();
@@ -143,11 +240,34 @@ export default function MetricsView({ books }) {
   const avgRating = rated.length ? (rated.reduce((s, b) => s + b.rating, 0) / rated.length).toFixed(1) : '—';
   const avgPages = read.length ? Math.round(read.reduce((s, b) => s + (b.totalPages || 0), 0) / read.length) : 0;
 
-  // Longest timed session across all books
+  // Total & longest reading time from logged sessions.
   let longest = 0;
-  books.forEach((b) => (b.sessions || []).forEach((s) => { if ((s.minutes || 0) > longest) longest = s.minutes; }));
+  let totalMinutes = 0;
+  books.forEach((b) => (b.sessions || []).forEach((s) => {
+    totalMinutes += s.minutes || 0;
+    if ((s.minutes || 0) > longest) longest = s.minutes;
+  }));
+  const hoursRead = Math.round(totalMinutes / 60);
 
-  // Genre pie (top 6 + Other)
+  // This calendar year
+  const year = new Date().getFullYear();
+  const inYear = (d) => d && new Date(d).getFullYear() === year;
+  const finishedThisYear = read.filter((b) => inYear(b.finishedAt || b.updatedAt)).length;
+
+  // Playful: a finished-book stack is ~2.3 cm per book.
+  const stackCm = Math.round(read.length * 2.3);
+  const stack = stackCm >= 100 ? `${(stackCm / 100).toFixed(1)} m` : `${stackCm} cm`;
+
+  // Highlights
+  const topRated = [...rated].sort((a, b) => b.rating - a.rating || (b.totalPages || 0) - (a.totalPages || 0))[0];
+  const longestBook = [...books].filter((b) => b.totalPages).sort((a, b) => b.totalPages - a.totalPages)[0];
+  const latestFinish = [...read].filter((b) => b.finishedAt).sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))[0];
+  const currentRead = [...reading].sort(
+    (a, b) => (b.currentPage / b.totalPages || 0) - (a.currentPage / a.totalPages || 0)
+  )[0];
+  const curPct = currentRead ? Math.min(100, Math.round((currentRead.currentPage / currentRead.totalPages) * 100) || 0) : 0;
+
+  // Genre pie (top 6 + Other), normalized
   const counted = books.filter((b) => b.status === 'read' || b.status === 'reading');
   const gc = {};
   counted.forEach((b) => { const g = normalizeGenre(b.genre); gc[g] = (gc[g] || 0) + 1; });
@@ -157,31 +277,49 @@ export default function MetricsView({ books }) {
   const genreData = topG.map(([label, value], i) => ({ label, value, color: PIE[i % PIE.length] }));
   if (otherG) genreData.push({ label: 'Other', value: otherG, color: '#9CA3AF' });
 
+  // Top authors
+  const ac = {};
+  counted.forEach((b) => { const a = (b.author || 'Unknown').split(',')[0].trim(); ac[a] = (ac[a] || 0) + 1; });
+  const topAuthors = Object.entries(ac).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
   // Status donut
   const statusData = Object.entries(STATUSES)
     .map(([key, meta]) => ({ label: meta.short, value: books.filter((b) => b.status === key).length, color: meta.color }))
     .filter((d) => d.value > 0);
 
-  // Per-month: books finished + pages read (last 12 months)
+  // Per-month trends (last 12 months)
   const months = lastMonths(12);
   const finishedByMonth = Object.fromEntries(months.map((m) => [m, 0]));
-  read.forEach((b) => {
-    const key = monthKey(b.finishedAt || b.updatedAt);
-    if (key in finishedByMonth) finishedByMonth[key] += 1;
-  });
+  read.forEach((b) => { const key = monthKey(b.finishedAt || b.updatedAt); if (key in finishedByMonth) finishedByMonth[key] += 1; });
   const pagesByMonth = Object.fromEntries(months.map((m) => [m, 0]));
-  books.forEach((b) => (b.sessions || []).forEach((s) => {
-    const key = monthKey(s.date);
-    if (key in pagesByMonth) pagesByMonth[key] += s.pagesRead || 0;
-  }));
+  books.forEach((b) => (b.sessions || []).forEach((s) => { const key = monthKey(s.date); if (key in pagesByMonth) pagesByMonth[key] += s.pagesRead || 0; }));
   const booksMonthData = months.map((m) => ({ label: monthLabel(m), value: finishedByMonth[m] }));
   const pagesMonthData = months.map((m) => ({ label: monthLabel(m), value: pagesByMonth[m] }));
 
-  // Rating distribution (round to nearest star)
+  // Rating distribution
   const ratingData = [5, 4, 3, 2, 1].map((star) => ({
     label: `${star}★`,
     value: rated.filter((b) => Math.round(b.rating) === star).length,
   }));
+
+  // Reading pace / projection for the current year
+  const monthIdx = new Date().getMonth() + 1; // 1..12
+  const projectedYear = finishedThisYear > 0 ? Math.round((finishedThisYear / monthIdx) * 12) : 0;
+
+  // Finished books, newest first, for the cover wall
+  const finishedShelf = [...read].sort(
+    (a, b) => new Date(b.finishedAt || b.updatedAt || 0) - new Date(a.finishedAt || a.updatedAt || 0)
+  );
+
+  // Reading-personality insight chips (all derived from data that's always present)
+  const insights = buildInsights({
+    read,
+    dnf,
+    avgPages,
+    avgRating,
+    topGenre: topG[0]?.[0],
+    longestBook,
+  });
 
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
@@ -192,12 +330,60 @@ export default function MetricsView({ books }) {
         </h2>
       </div>
 
-      {/* Stat tiles */}
+      {/* Hero band */}
+      <div className="rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-100/70 via-amber-50 to-surface p-6 md:p-8 shadow-sm">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
+          <HeroStat value={read.length} label="Books Finished" />
+          <HeroStat value={totalPagesRead.toLocaleString()} label="Pages Read" />
+          {hoursRead > 0 && <HeroStat value={`${hoursRead}h`} label="Time Reading" />}
+          <HeroStat value={finishedThisYear} label={`Finished in ${year}`} />
+          {projectedYear > 0 && <HeroStat value={`~${projectedYear}`} label={`On Pace for ${year}`} />}
+          <div className="ml-auto flex items-center gap-2 text-sm text-brand-700 bg-surface/70 border border-brand-100 rounded-full px-4 py-2">
+            <Layers size={16} />
+            {read.length > 0
+              ? <span>Stacked up, that&rsquo;s ~<b>{stack}</b> of books</span>
+              : <span>Finish a book to start your stack</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Highlights with covers */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Highlight label="Top Rated" icon={<Trophy size={13} />} book={topRated} meta={topRated ? `${topRated.rating}★ · ${topRated.author}` : ''} />
+        <Highlight label="Longest Read" icon={<Ruler size={13} />} book={longestBook} meta={longestBook ? `${(longestBook.totalPages || 0).toLocaleString()} pages` : ''} />
+        <Highlight label="Latest Finish" icon={<CheckCircle size={13} />} book={latestFinish} meta={latestFinish ? `Finished ${monthLabel(monthKey(latestFinish.finishedAt))}` : ''} />
+        <Highlight label="On Your Nightstand" icon={<BookOpen size={13} />} book={currentRead} meta={currentRead ? `${curPct}% · p.${currentRead.currentPage || 0}/${currentRead.totalPages}` : ''} />
+      </div>
+
+      {/* Reading personality — warm, always-populated insight chips */}
+      {insights.length > 0 && (
+        <div className="rounded-3xl border border-brand-100 bg-gradient-to-br from-amber-50 to-surface p-6 shadow-sm">
+          <h3 className="text-base font-display font-semibold text-ink mb-4 flex items-center gap-2">
+            <Sparkles size={18} className="text-brand-500" /> Your Reading Personality
+          </h3>
+          <div className="flex flex-wrap gap-2.5">
+            {insights.map((it, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-2 bg-surface border border-brand-100 rounded-full px-4 py-2 text-sm text-ink shadow-sm"
+              >
+                <span className="text-brand-500 shrink-0">{it.icon}</span>
+                {it.text}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* On Your Shelf — a wall of the real covers you've finished */}
+      <CoverWall books={finishedShelf} />
+
+      {/* Secondary stat tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile icon={<CheckCircle size={15} className="text-status-read" />} label="Finished" value={read.length} />
-        <StatTile icon={<BookOpen size={15} className="text-status-want" />} label="Pages Read" value={totalPagesRead.toLocaleString()} />
-        <StatTile icon={<Star size={15} className="text-brand-400 fill-brand-400" />} label="Avg Rating" value={avgRating} />
+        <StatTile icon={<Star size={15} className="text-brand-400 fill-brand-400" />} label="Avg Rating" value={avgRating} sub={avgRating !== '—' ? '/ 5' : ''} />
+        <StatTile icon={<Clock size={15} className="text-brand-500" />} label="Avg Length" value={avgPages || '—'} sub={avgPages ? 'pages' : ''} />
         <StatTile icon={<Timer size={15} className="text-brand-500" />} label="Longest Session" value={longest ? `${longest}` : '—'} sub={longest ? 'min' : ''} />
+        <StatTile icon={<XCircle size={15} className="text-status-dnf" />} label="Set Aside (DNF)" value={dnf.length} />
       </div>
 
       {/* Streak + status */}
@@ -210,10 +396,38 @@ export default function MetricsView({ books }) {
         </Card>
       </div>
 
-      {/* Genre pie */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* Genres + Ratings + Authors — a filled 3-up row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card title="Genres Read" icon={<Book size={18} className="text-brand-500" />}>
           <Pie data={genreData} />
+        </Card>
+        <Card title="How You Rate" icon={<Star size={18} className="text-brand-500" />}>
+          {rated.length ? <HBars data={ratingData} /> : <p className="text-stone-400 italic py-6 text-center">Rate some finished books to see this.</p>}
+        </Card>
+        <Card title="Most-Read Authors" icon={<Users size={18} className="text-brand-500" />}>
+          {topAuthors.length ? (
+            <div className="flex flex-col gap-3">
+              {topAuthors.map(([name, count], i) => {
+                const max = topAuthors[0][1];
+                return (
+                  <div key={name} className="flex items-center gap-3 text-sm">
+                    <span className="w-5 text-stone-400 font-display font-bold tabular-nums">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between mb-1">
+                        <span className="font-medium text-ink truncate">{name}</span>
+                        <span className="text-stone-500 tabular-nums shrink-0 ml-2">{count}</span>
+                      </div>
+                      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-400 rounded-full" style={{ width: `${(count / max) * 100}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-stone-400 italic py-6 text-center">Add a few books to see your favorites.</p>
+          )}
         </Card>
       </div>
 
@@ -225,30 +439,6 @@ export default function MetricsView({ books }) {
         <Card title="Pages Read / Month" icon={<BookOpen size={18} className="text-brand-500" />}>
           <Bars data={pagesMonthData} color="var(--color-status-read)" />
         </Card>
-      </div>
-
-      {/* Ratings + insights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card title="Rating Distribution" icon={<Star size={18} className="text-brand-500" />} className="md:col-span-2">
-          {rated.length ? <HBars data={ratingData} /> : <p className="text-stone-400 italic py-6 text-center">Rate some finished books to see this.</p>}
-        </Card>
-        <div className="flex flex-col gap-6">
-          <div className="bg-brand-50 p-6 rounded-2xl border border-brand-100 flex-1 flex flex-col justify-center">
-            <span className="text-brand-700 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Clock size={15} /> Avg. Book Length
-            </span>
-            <div className="flex items-baseline gap-2">
-              <span className="font-display font-bold text-4xl text-ink leading-tight">{avgPages}</span>
-              <span className="text-stone-500 font-medium">pages</span>
-            </div>
-          </div>
-          <div className="bg-stone-50 p-6 rounded-2xl border border-stone-200 flex-1 flex flex-col justify-center">
-            <span className="text-stone-500 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
-              <XCircle size={15} /> Abandoned (DNF)
-            </span>
-            <span className="font-display font-bold text-4xl text-ink leading-tight">{dnf.length}</span>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { BookOpen, Search, MessageSquare, ArrowLeft, Loader2, Send, RotateCcw } from 'lucide-react';
-import { renderMarkdown } from '../../lib/markdown';
+import { BookOpen, Search, MessageSquare, ArrowLeft, Send, RotateCcw } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
+import BookLoader from '../ui/BookLoader';
+import Typewriter from '../ui/Typewriter';
 
 /**
  * AI companion tools for a single book: Smart Recap, Analysis Kit, and
@@ -101,7 +102,7 @@ export default function AIToolsView({ book, onUpdate }) {
       id: 'recap',
       onClick: handleRecap,
       icon: <BookOpen size={26} />,
-      title: 'Smart Recap',
+      title: 'Story So Far',
       desc: `Get caught up to page ${book.currentPage || 0} without spoilers.`,
       tone: 'bg-brand-50 border-brand-100 text-brand-700 hover:bg-brand-100',
       iconBg: 'bg-brand-100 text-brand-700',
@@ -110,7 +111,7 @@ export default function AIToolsView({ book, onUpdate }) {
       id: 'analysis',
       onClick: handleAnalysis,
       icon: <Search size={26} />,
-      title: 'Analysis Kit',
+      title: 'Marginalia',
       desc: 'Themes, motifs, and symbols to watch for as you read.',
       tone: 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100',
       iconBg: 'bg-blue-100 text-blue-700',
@@ -154,7 +155,7 @@ export default function AIToolsView({ book, onUpdate }) {
               <MessageSquare size={26} />
             </div>
             <h4 className={`font-display font-bold text-lg mb-2 ${book.status === 'read' ? 'text-purple-900' : 'text-stone-500'}`}>
-              Socratic Seminar
+              The Reading Circle
             </h4>
             <p className={`text-sm ${book.status === 'read' ? 'text-purple-700' : 'text-stone-400'}`}>
               {book.status === 'read'
@@ -184,9 +185,16 @@ export default function AIToolsView({ book, onUpdate }) {
 
           <div className="bg-stone-50 p-6 md:p-8 rounded-2xl border border-stone-200 min-h-[300px]">
             {loading && !result && chatHistory.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-stone-400 gap-3">
-                <Loader2 size={32} className="animate-spin text-brand-500" />
-                <p>AI is thinking...</p>
+              <div className="flex items-center justify-center h-48">
+                <BookLoader
+                  label={
+                    activeTool === 'recap'
+                      ? 'Turning back to your page…'
+                      : activeTool === 'analysis'
+                        ? 'Reading between the lines…'
+                        : 'Gathering thoughts…'
+                  }
+                />
               </div>
             ) : activeTool === 'seminar' ? (
               <div className="flex flex-col h-[400px]">
@@ -237,10 +245,9 @@ export default function AIToolsView({ book, onUpdate }) {
                 </form>
               </div>
             ) : (
-              <div
-                className="prose prose-stone max-w-none font-serif leading-relaxed text-ink"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(result) }}
-              />
+              <div className="aged-paper rounded-2xl p-6 md:p-8 font-serif leading-relaxed text-[15px]">
+                <Typewriter key={`${activeTool}|${result.length}`} text={result} className="space-y-3" />
+              </div>
             )}
           </div>
         </div>

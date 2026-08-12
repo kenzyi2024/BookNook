@@ -4,14 +4,37 @@ import { fmtDate } from '../../lib/format';
 import { renderMarkdown } from '../../lib/markdown';
 
 /**
- * Journal-style Notes tab: an autosaving overview note, dated journal entries
- * (with light **markdown** formatting), and saved quotes tied to page numbers.
- * Styled to feel like writing in a real journal.
+ * The Notes tab, styled as a real leather journal (à la Louis Carmen): a grained
+ * cover with a ribbon marker and elastic band, tabbed dividers, and lined
+ * cream pages. The book "opens" when you enter the tab, and turning between the
+ * Journal and Quotes sections flips a page.
+ *
+ * The journal keeps its own fixed cream/ink palette so it reads identically in
+ * both the light and candlelit themes.
  */
+
+const PAPER = '#FBF7EC';
+const LINE = '#E8DFC8';
+const INK = '#3A2E26';
+const MUTE = '#8A7A66';
+const CARD = '#FFFDF7';
+const ACCENT = '#A8551F';
+
 const leatherStyle = {
   background:
-    'linear-gradient(145deg, #5C3A23 0%, #472C18 50%, #3B2413 100%)',
-  boxShadow: 'inset 0 0 40px rgba(0,0,0,0.35)',
+    'radial-gradient(130% 90% at 18% 0%, rgba(255,255,255,0.07), transparent 42%),' +
+    'radial-gradient(100% 120% at 100% 100%, rgba(0,0,0,0.28), transparent 55%),' +
+    'linear-gradient(145deg, #5C3A23 0%, #472C18 55%, #37220F 100%)',
+  boxShadow:
+    'inset 0 0 60px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.06), 0 22px 44px rgba(0,0,0,0.35)',
+};
+
+// Lined-paper surface
+const paperStyle = {
+  backgroundColor: PAPER,
+  color: INK,
+  backgroundImage: `repeating-linear-gradient(${PAPER}, ${PAPER} 31px, ${LINE} 31px, ${LINE} 32px)`,
+  backgroundAttachment: 'local',
 };
 
 export default function NotesJournal({ book, onUpdate }) {
@@ -23,11 +46,17 @@ export default function NotesJournal({ book, onUpdate }) {
   ];
 
   return (
-    <div className="animate-in fade-in rounded-[26px] p-3 md:p-4 shadow-2xl" style={leatherStyle}>
-      {/* faux-stitch border */}
-      <div className="rounded-[20px] border border-dashed border-amber-100/20 flex overflow-hidden min-h-[500px]">
-        {/* Section tabs down the side, like a leather notebook's dividers */}
-        <div className="flex flex-col gap-2 p-3 bg-black/15">
+    <div className="bn-open relative rounded-[26px] p-3 md:p-4 shadow-2xl" style={leatherStyle}>
+      {/* elastic closure band */}
+      <div className="pointer-events-none absolute top-2 bottom-2 right-7 w-2.5 rounded bg-black/35 shadow-[inset_0_0_4px_rgba(0,0,0,0.5)]" />
+      {/* ribbon bookmark */}
+      <div className="pointer-events-none absolute -top-1 right-16 w-3 h-24 bg-gradient-to-b from-[#9A2B2B] to-[#7C1F1F] shadow-md"
+        style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%)' }} />
+
+      {/* gold-rule stitch border */}
+      <div className="rounded-[20px] border border-dashed border-amber-100/25 ring-1 ring-[#C9A24B]/10 flex overflow-hidden min-h-[520px]">
+        {/* Section dividers down the side */}
+        <div className="flex flex-col gap-2 p-3 bg-black/20">
           {tabs.map((t) => {
             const active = view === t.id;
             const Icon = t.icon;
@@ -37,20 +66,21 @@ export default function NotesJournal({ book, onUpdate }) {
                 onClick={() => setView(t.id)}
                 className={`flex items-center gap-2 px-3 py-3 rounded-l-xl text-sm font-semibold transition-all ${
                   active
-                    ? 'bg-[#FBF7EC] text-brand-700 -mr-3 pr-6 shadow'
+                    ? '-mr-3 pr-6 shadow text-[#7C3B12]'
                     : 'bg-amber-900/30 text-amber-100/80 hover:bg-amber-900/50'
                 }`}
+                style={active ? { backgroundColor: PAPER } : undefined}
               >
                 <Icon size={16} />
                 <span className="hidden sm:inline">{t.label}</span>
-                {t.count ? <span className={`text-xs ${active ? 'text-brand-400' : 'text-amber-200/60'}`}>{t.count}</span> : null}
+                {t.count ? <span className={active ? 'text-[#A8551F] text-xs' : 'text-amber-200/60 text-xs'}>{t.count}</span> : null}
               </button>
             );
           })}
         </div>
 
-        {/* Page */}
-        <div className="flex-1 bg-[#FBF7EC] p-5 md:p-7 min-w-0">
+        {/* Page — remounts on view change so the page-turn animation replays */}
+        <div key={view} className="bn-page-turn flex-1 p-5 md:p-7 min-w-0" style={{ backgroundColor: PAPER }}>
           {view === 'journal' ? (
             <JournalView book={book} onUpdate={onUpdate} />
           ) : (
@@ -62,20 +92,10 @@ export default function NotesJournal({ book, onUpdate }) {
   );
 }
 
-// Lined-paper journal surface
-const paperStyle = {
-  backgroundColor: '#FBF7EC',
-  backgroundImage:
-    'repeating-linear-gradient(#FBF7EC, #FBF7EC 31px, #E8DFC8 31px, #E8DFC8 32px)',
-  backgroundAttachment: 'local',
-};
-
 function JournalView({ book, onUpdate }) {
   const entries = [...(book.journalEntries || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
   const [draft, setDraft] = useState('');
 
-  // Autosaving "overview" note. NotesJournal remounts when a different book is
-  // opened, so initializing from props once is enough.
   const [note, setNote] = useState(book.notes || '');
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
   const timer = useRef(null);
@@ -100,7 +120,6 @@ function JournalView({ book, onUpdate }) {
 
   const deleteEntry = (idx) => {
     const original = book.journalEntries || [];
-    // entries are sorted desc; map back by identity
     const target = entries[idx];
     onUpdate({ journalEntries: original.filter((e) => e !== target && e._id !== target._id) });
   };
@@ -110,41 +129,34 @@ function JournalView({ book, onUpdate }) {
       {/* Overview note (autosave) */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Overview</label>
-          <span className="text-xs text-stone-400 flex items-center gap-1 h-4">
-            {saveState === 'saving' && (
-              <>
-                <Loader2 size={12} className="animate-spin" /> Saving…
-              </>
-            )}
-            {saveState === 'saved' && (
-              <>
-                <Check size={12} className="text-status-read" /> Saved
-              </>
-            )}
+          <label className="text-sm font-semibold uppercase tracking-wider" style={{ color: MUTE }}>Overview</label>
+          <span className="text-xs flex items-center gap-1 h-4" style={{ color: MUTE }}>
+            {saveState === 'saving' && (<><Loader2 size={12} className="animate-spin" /> Saving…</>)}
+            {saveState === 'saved' && (<><Check size={12} className="text-status-read" /> Saved</>)}
           </span>
         </div>
         <textarea
           value={note}
           onChange={(e) => onNoteChange(e.target.value)}
           placeholder="A running note about this book…"
-          className="w-full min-h-[90px] p-4 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 text-stone-800 leading-relaxed font-serif shadow-inner border border-stone-200"
-          style={paperStyle}
+          className="w-full min-h-[90px] p-4 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 leading-relaxed font-serif shadow-inner border"
+          style={{ ...paperStyle, borderColor: LINE }}
         />
       </div>
 
       {/* New journal entry */}
-      <div className="rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: LINE }}>
         <div className="flex items-stretch" style={paperStyle}>
-          <div className="w-10 shrink-0 border-r-2 border-red-300/50 bg-transparent" />
+          <div className="w-10 shrink-0 border-r-2 border-red-300/50" />
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Dear journal… what happened / what you're thinking. **bold** and *italic* supported."
-            className="flex-1 min-h-[130px] p-4 bg-transparent resize-none focus:outline-none text-stone-800 leading-8 font-serif text-lg"
+            className="flex-1 min-h-[130px] p-4 bg-transparent resize-none focus:outline-none leading-8 font-serif text-lg"
+            style={{ color: INK }}
           />
         </div>
-        <div className="flex justify-end p-3 bg-white border-t border-stone-100">
+        <div className="flex justify-end p-3 border-t" style={{ backgroundColor: CARD, borderColor: LINE }}>
           <button
             onClick={addEntry}
             disabled={!draft.trim()}
@@ -158,9 +170,9 @@ function JournalView({ book, onUpdate }) {
       {/* Past entries */}
       <div className="space-y-4">
         {entries.map((e, i) => (
-          <div key={e._id || i} className="rounded-2xl border border-stone-200 shadow-sm overflow-hidden group">
-            <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-stone-100">
-              <span className="text-xs font-semibold text-brand-600 uppercase tracking-wider">{fmtDate(e.date)}</span>
+          <div key={e._id || i} className="rounded-2xl border shadow-sm overflow-hidden group" style={{ borderColor: LINE }}>
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ backgroundColor: CARD, borderColor: LINE }}>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: ACCENT }}>{fmtDate(e.date)}</span>
               <button
                 onClick={() => deleteEntry(i)}
                 className="text-stone-300 hover:text-status-dnf transition-colors opacity-0 group-hover:opacity-100"
@@ -170,8 +182,8 @@ function JournalView({ book, onUpdate }) {
               </button>
             </div>
             <div
-              className="p-4 font-serif text-stone-800 leading-8 text-lg"
-              style={paperStyle}
+              className="p-4 font-serif leading-8 text-lg"
+              style={{ ...paperStyle, color: INK }}
               dangerouslySetInnerHTML={{ __html: renderMarkdown(e.text) }}
             />
           </div>
@@ -198,12 +210,13 @@ function QuotesView({ book, onUpdate }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-paper border border-stone-200 rounded-2xl p-4">
+      <div className="rounded-2xl border p-4" style={{ backgroundColor: CARD, borderColor: LINE }}>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a favorite quote…"
-          className="w-full min-h-[80px] p-3 bg-white border border-stone-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 font-serif italic text-stone-800"
+          className="w-full min-h-[80px] p-3 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 font-serif italic"
+          style={{ backgroundColor: '#fff', borderColor: LINE, color: INK }}
         />
         <div className="flex items-center gap-3 mt-3">
           <input
@@ -211,7 +224,8 @@ function QuotesView({ book, onUpdate }) {
             value={page}
             onChange={(e) => setPage(e.target.value)}
             placeholder="Page #"
-            className="w-28 bg-white border border-stone-200 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
+            className="w-28 border rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
+            style={{ backgroundColor: '#fff', borderColor: LINE, color: INK }}
           />
           <button
             onClick={addQuote}
@@ -225,14 +239,14 @@ function QuotesView({ book, onUpdate }) {
 
       <div className="space-y-3">
         {quotes.length === 0 && (
-          <p className="text-center text-stone-400 italic py-6">No saved quotes yet.</p>
+          <p className="text-center italic py-6" style={{ color: MUTE }}>No saved quotes yet.</p>
         )}
         {quotes.map((q, i) => (
-          <div key={i} className="relative bg-white border border-stone-200 rounded-2xl p-5 pl-6 shadow-sm group">
-            <div className="absolute left-0 top-4 bottom-4 w-1 bg-brand-300 rounded-full" />
-            <p className="font-serif italic text-lg text-stone-800 leading-relaxed">“{q.text}”</p>
+          <div key={i} className="relative border rounded-2xl p-5 pl-6 shadow-sm group" style={{ backgroundColor: CARD, borderColor: LINE }}>
+            <div className="absolute left-0 top-4 bottom-4 w-1 rounded-full" style={{ backgroundColor: '#DDB07A' }} />
+            <p className="font-serif italic text-lg leading-relaxed" style={{ color: INK }}>“{q.text}”</p>
             <div className="flex items-center justify-between mt-2">
-              {q.page ? <span className="text-xs text-stone-400">page {q.page}</span> : <span />}
+              {q.page ? <span className="text-xs" style={{ color: MUTE }}>page {q.page}</span> : <span />}
               <button
                 onClick={() => removeQuote(i)}
                 className="text-stone-300 hover:text-status-dnf transition-colors opacity-0 group-hover:opacity-100"

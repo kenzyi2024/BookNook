@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
-import { plantEmoji, frameClass } from '../../lib/gadgets';
+import { frameClass } from '../../lib/gadgets';
+import { GadgetArt } from '../../lib/gadgetArt';
 
 /**
  * A decorative shelf gadget (plant or framed photo) that sits among the books.
@@ -16,12 +17,12 @@ export default function GadgetItem({ gadget, onRemove }) {
           <X size={13} />
         </button>
       )}
-      {gadget.type === 'plant' ? (
-        <span className="text-5xl leading-none drop-shadow-md select-none">{plantEmoji(gadget.variant)}</span>
-      ) : (
+      {gadget.type === 'photo' ? (
         <div className={frameClass(gadget.frame)} title={gadget.caption || ''}>
           <img src={gadget.image} alt={gadget.caption || 'photo'} className="w-16 h-20 object-cover" />
         </div>
+      ) : (
+        <GadgetArt variant={gadget.variant} className="h-14 w-auto drop-shadow-md" />
       )}
     </div>
   );

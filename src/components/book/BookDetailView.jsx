@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles, Share2, Headphones } from 'lucide-react';
+import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
@@ -7,7 +7,7 @@ import SessionLogger from './SessionLogger';
 import NotesJournal from './NotesJournal';
 import ShareCard from './ShareCard';
 import { STATUS_OPTIONS } from '../../lib/status';
-import { resolveCover } from '../../lib/covers';
+import { resolveCover, refreshCover } from '../../lib/covers';
 
 /**
  * Full-page view for one book: cover, metadata, status/rating controls, and the
@@ -20,7 +20,23 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   const [ratingInput, setRatingInput] = useState(book.rating ? String(book.rating) : '');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const hasAttemptedFetch = useRef(false);
+
+  // TEMPORARY: force-repair a wrong stored cover. Remove with the button below.
+  const refreshCoverNow = async () => {
+    setRefreshing(true);
+    setImgLoaded(false);
+    try {
+      const r = await refreshCover(book.title, book.author);
+      if (r.coverUrl) {
+        setCoverUrl(r.coverUrl);
+        onUpdate({ coverUrl: r.coverUrl, spineColor: r.spineColor });
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (book.coverUrl || hasAttemptedFetch.current) return;
@@ -70,8 +86,9 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 mb-8 bg-surface p-6 rounded-3xl shadow-sm border border-stone-100">
+        <div className="flex flex-col items-center gap-2 flex-shrink-0">
         <div
-          className={`w-48 h-72 rounded-md shadow-2xl flex-shrink-0 flex items-center justify-center p-4 relative overflow-hidden ${coverUrl ? '' : book.coverColor}`}
+          className={`w-48 h-72 rounded-md shadow-2xl flex items-center justify-center p-4 relative overflow-hidden ${coverUrl ? '' : book.coverColor}`}
           style={!coverUrl && book.spineColor ? { backgroundColor: book.spineColor } : undefined}
         >
           {coverUrl ? (
@@ -96,6 +113,15 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
               </h2>
             </>
           )}
+        </div>
+          {/* TEMPORARY cover-repair — remove this button (and refreshCover) later */}
+          <button
+            onClick={refreshCoverNow}
+            disabled={refreshing}
+            className="text-xs text-stone-500 hover:text-brand-600 flex items-center gap-1.5 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} /> Refresh cover
+          </button>
         </div>
 
         <div className="flex-1 flex flex-col justify-center">

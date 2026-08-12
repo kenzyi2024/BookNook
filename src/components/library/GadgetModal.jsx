@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
-import { PLANTS, FRAMES, frameClass } from '../../lib/gadgets';
+import { X, Loader2, Sprout, Image as ImageIcon } from 'lucide-react';
+import { FRAMES, frameClass } from '../../lib/gadgets';
+import { ACCESSORIES, GadgetArt } from '../../lib/gadgetArt';
 import { fileToDataUrl } from '../../lib/image';
 import { useToast } from '../ui/ToastProvider';
 
@@ -63,22 +64,26 @@ export default function GadgetModal({ onAdd, onClose }) {
                 type === t ? 'bg-brand-500 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
               }`}
             >
-              {t === 'plant' ? '🪴 Plant' : '🖼️ Photo'}
+              <span className="flex items-center justify-center gap-1.5">
+                {t === 'plant' ? <Sprout size={15} /> : <ImageIcon size={15} />}
+                {t === 'plant' ? 'Decor' : 'Photo'}
+              </span>
             </button>
           ))}
         </div>
 
         {type === 'plant' ? (
-          <div className="grid grid-cols-4 gap-3">
-            {PLANTS.map((p) => (
+          <div className="grid grid-cols-3 gap-3">
+            {ACCESSORIES.map((a) => (
               <button
-                key={p.id}
-                onClick={() => setVariant(p.id)}
-                className={`aspect-square rounded-2xl text-4xl flex items-center justify-center border-2 transition-all ${
-                  variant === p.id ? 'border-brand-500 bg-brand-50' : 'border-stone-200 hover:border-stone-300'
+                key={a.id}
+                onClick={() => setVariant(a.id)}
+                className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 border-2 p-2 transition-all ${
+                  variant === a.id ? 'border-brand-500 bg-brand-50' : 'border-stone-200 hover:border-stone-300'
                 }`}
               >
-                {p.emoji}
+                <GadgetArt variant={a.id} className="h-10 w-auto" />
+                <span className="text-[10px] text-stone-500">{a.label}</span>
               </button>
             ))}
           </div>

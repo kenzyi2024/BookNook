@@ -126,6 +126,22 @@ export function dominantColor(url) {
  * Resolve `{ coverUrl, spineColor }` for a book, cached by title+author.
  * Pass `knownUrl` (e.g. book.coverUrl from the DB) to skip the lookup.
  */
+/**
+ * TEMPORARY — force a fresh cover lookup, ignoring any stored/cached URL, to
+ * repair books that saved a wrong cover. Prefers Google Books, falls back to
+ * Open Library, and re-samples the tint. Remove this along with the detail-page
+ * "Refresh cover" button once existing covers are cleaned up.
+ */
+export async function refreshCover(title, author) {
+  const olUrl = await lookupCoverUrl(title, author);
+  const color = olUrl ? await dominantColor(olUrl) : '';
+  const googleUrl = await lookupGoogleCover(title, author);
+  const display = googleUrl || olUrl;
+  mem[keyOf(title, author)] = { display, olUrl, color };
+  saveCacheSoon();
+  return { coverUrl: display, spineColor: color };
+}
+
 export async function resolveCover(title, author, knownUrl = '') {
   const k = keyOf(title, author);
   const cached = mem[k];

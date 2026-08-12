@@ -1,16 +1,5 @@
-export const PLANTS = [
-  { id: 'succulent', emoji: '🪴' },
-  { id: 'fern', emoji: '🌿' },
-  { id: 'cactus', emoji: '🌵' },
-  { id: 'flowers', emoji: '💐' },
-  { id: 'clover', emoji: '☘️' },
-  { id: 'bonsai', emoji: '🎍' },
-  { id: 'tulip', emoji: '🌷' },
-  { id: 'candle', emoji: '🕯️' },
-];
-
-export const plantEmoji = (variant) => (PLANTS.find((p) => p.id === variant) || PLANTS[0]).emoji;
-
+// Photo-frame styles for the "photo" shelf gadget. (Decor accessories live in
+// gadgetArt.jsx as SVG art — no emojis anywhere.)
 export const FRAMES = [
   { id: 'classic', label: 'Classic' },
   { id: 'gold', label: 'Gold' },

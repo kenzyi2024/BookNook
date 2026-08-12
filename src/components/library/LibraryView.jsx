@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout } from 'lucide-react';
+import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown } from 'lucide-react';
 import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
+import { SORT_OPTIONS, sortBooks } from '../../lib/sortBooks';
 import Shelf from './Shelf';
+import Bookcase from './Bookcase';
 import SuggestionsPanel from './SuggestionsPanel';
-import GadgetItem from './GadgetItem';
 import GadgetModal from './GadgetModal';
 import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { useApi } from '../../hooks/useApi';
@@ -86,15 +87,22 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   const [loadingType, setLoadingType] = useState(null);
   const [suggestionsType, setSuggestionsType] = useState(null);
   const [showGadget, setShowGadget] = useState(false);
+  const [sort, setSort] = useState('added_desc');
 
   const decor = user?.shelfDecor || [];
   const addGadget = (g) => updateProfile({ shelfDecor: [...decor, g] });
   const removeGadget = (idx) => updateProfile({ shelfDecor: decor.filter((_, i) => i !== idx) });
-  const gadgetExtras = decor.map((g, i) => (
-    <GadgetItem key={g._id || i} gadget={g} onRemove={() => removeGadget(i)} />
-  ));
+  const moveGadget = (idx, dir) => {
+    const next = decor.map((g, i) => {
+      if (i !== idx) return g;
+      const cur = g.position ?? books.length;
+      return { ...g, position: Math.max(0, Math.min(books.length, cur + dir)) };
+    });
+    updateProfile({ shelfDecor: next });
+  };
 
   const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
+  const sorted = sortBooks(filtered, sort);
 
   // Persist a resolved cover/tint to the DB (best-effort; self-heals existing books).
   const persistCover = (id, patch) => {
@@ -248,6 +256,19 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
           })}
         </div>
         <div className="flex flex-wrap gap-2">
+          <div className="relative">
+            <ArrowUpDown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="appearance-none text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full pl-9 pr-4 py-2 hover:border-brand-300 transition-colors cursor-pointer"
+              aria-label="Sort books"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
+          </div>
           <button
             onClick={() => getSuggestions('history')}
             disabled={books.length === 0}
@@ -285,22 +306,28 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
         </div>
       )}
 
-      <Shelf
-        icon={<Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />}
-        title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
-        books={filtered}
-        onSelect={onSelect}
-        onPersistCover={persistCover}
-        wave={<ShelfWave1 />}
-        extras={filter === 'all' ? gadgetExtras : []}
-        emptyState={
-          books.length === 0 ? (
-            <EmptyLibrary suggestBlock={suggestBlock} inline />
-          ) : (
-            <div className="text-stone-400 italic">No books in this filter.</div>
-          )
-        }
-      />
+      {/* Library title */}
+      <div className="relative z-20 flex items-center gap-3 mb-3">
+        <Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />
+        <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">
+          {filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
+        </h2>
+      </div>
+
+      {books.length === 0 ? (
+        <EmptyLibrary suggestBlock={suggestBlock} inline />
+      ) : sorted.length === 0 ? (
+        <div className="text-stone-400 italic py-10">No books in this filter.</div>
+      ) : (
+        <Bookcase
+          books={sorted}
+          decor={filter === 'all' ? decor : []}
+          onSelect={onSelect}
+          onPersistCover={persistCover}
+          onMoveGadget={moveGadget}
+          onRemoveGadget={removeGadget}
+        />
+      )}
 
       {showGadget && (
         <GadgetModal

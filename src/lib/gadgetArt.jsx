@@ -14,7 +14,7 @@ const INK = '#3A2E26';
 
 function Succulent(props) {
   return (
-    <svg viewBox="0 0 48 56" fill="none" {...props}>
+    <svg viewBox="0 0 48 56" preserveAspectRatio="xMidYMax meet" fill="none" {...props}>
       <g fill={GREEN}>
         <path d="M24 34C20 24 16 22 18 13c6 5 7 12 6 21Z" />
         <path d="M24 34c4-10 8-12 6-21-6 5-7 12-6 21Z" />
@@ -30,7 +30,7 @@ function Succulent(props) {
 
 function LeafyPlant(props) {
   return (
-    <svg viewBox="0 0 48 60" fill="none" {...props}>
+    <svg viewBox="0 0 48 60" preserveAspectRatio="xMidYMax meet" fill="none" {...props}>
       <g stroke={GREEN} strokeWidth="2.5" strokeLinecap="round">
         <path d="M24 42C24 31 22 20 18 11" />
         <path d="M24 42C24 31 26 20 30 12" />
@@ -51,7 +51,7 @@ function LeafyPlant(props) {
 
 function Flowers(props) {
   return (
-    <svg viewBox="0 0 48 60" fill="none" {...props}>
+    <svg viewBox="0 0 48 60" preserveAspectRatio="xMidYMax meet" fill="none" {...props}>
       <g stroke={GREEN} strokeWidth="2" strokeLinecap="round">
         <path d="M24 42V15" />
         <path d="M24 30 16 21" />
@@ -69,7 +69,7 @@ function Flowers(props) {
 
 function Candle(props) {
   return (
-    <svg viewBox="0 0 40 60" fill="none" {...props}>
+    <svg viewBox="0 0 40 60" preserveAspectRatio="xMidYMax meet" fill="none" {...props}>
       <path d="M20 6c4 6 3 11 0 13-3-2-4-8 0-13Z" fill={FLAME} />
       <path d="M20 11c2 3 1.5 6 0 7-1.5-1-2-4 0-7Z" fill="#F6D49B" />
       <rect x="15" y="19" width="10" height="24" rx="2" fill={CREAM} />
@@ -81,7 +81,7 @@ function Candle(props) {
 
 function Bookends(props) {
   return (
-    <svg viewBox="0 0 58 54" fill="none" {...props}>
+    <svg viewBox="0 0 58 54" preserveAspectRatio="xMidYMax meet" fill="none" {...props}>
       <path d="M6 18h5v32H6z" fill={WOOD} />
       <path d="M47 12h5v38h-5z" fill={WOOD} />
       <path d="M6 46h46v4H6z" fill={WOOD_DK} />
@@ -95,7 +95,7 @@ function Bookends(props) {
 
 function DeskClock(props) {
   return (
-    <svg viewBox="0 0 48 52" fill="none" {...props}>
+    <svg viewBox="0 0 48 52" preserveAspectRatio="xMidYMax meet" fill="none" {...props}>
       <rect x="8" y="8" width="32" height="34" rx="9" fill={WOOD} />
       <rect x="13" y="42" width="6" height="6" rx="1" fill={WOOD_DK} />
       <rect x="29" y="42" width="6" height="6" rx="1" fill={WOOD_DK} />

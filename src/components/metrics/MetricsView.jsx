@@ -5,6 +5,7 @@ import {
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
 import { normalizeGenre } from '../../lib/genres';
+import Card from '../ui/Card';
 import StreakCalendar from './StreakCalendar';
 
 // Distinct categorical palette for the genre pie.
@@ -69,17 +70,6 @@ function StatTile({ icon, label, value, sub }) {
         <span className="font-display font-bold text-4xl text-ink leading-tight">{value}</span>
         {sub && <span className="text-stone-400 text-sm font-medium">{sub}</span>}
       </div>
-    </div>
-  );
-}
-
-function Card({ title, icon, children, className = '' }) {
-  return (
-    <div className={`bg-surface p-6 rounded-2xl shadow-sm border border-stone-200/70 ${className}`}>
-      <h3 className="text-base font-display font-semibold text-ink mb-5 flex items-center gap-2">
-        {icon} {title}
-      </h3>
-      {children}
     </div>
   );
 }

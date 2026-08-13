@@ -42,7 +42,7 @@ function GadgetSlot({ gadget, dragging, onDragStart, onDragEnd, onRemove, onNudg
       <button
         onClick={onRemove}
         aria-label="Remove decoration"
-        className="absolute -top-2 -right-1 z-10 bg-surface text-status-dnf rounded-full p-0.5 shadow border border-stone-200 opacity-0 group-hover/gadget:opacity-100 transition-opacity"
+        className="absolute -top-2 -right-1 z-10 bg-surface text-status-dnf rounded-full p-1.5 shadow border border-stone-200 opacity-0 group-hover/gadget:opacity-100 focus:opacity-100 transition-opacity"
       >
         <X size={13} />
       </button>

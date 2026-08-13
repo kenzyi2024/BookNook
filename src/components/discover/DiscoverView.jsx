@@ -70,7 +70,7 @@ function DiscoverCard({ s, owned, onAdd, onHide }) {
           onClick={onHide}
           aria-label="Not interested"
           title="Not interested"
-          className="absolute top-2 right-2 text-stone-300 hover:text-status-dnf transition-colors opacity-0 group-hover/card:opacity-100 focus:opacity-100"
+          className="absolute top-1.5 right-1.5 p-1.5 rounded-full text-stone-300 hover:text-status-dnf hover:bg-stone-100 transition-colors opacity-0 group-hover/card:opacity-100 focus:opacity-100"
         >
           <X size={15} />
         </button>

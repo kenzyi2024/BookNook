@@ -7,6 +7,7 @@ import SessionLogger from './SessionLogger';
 import NotesJournal from './NotesJournal';
 import ShareCard from './ShareCard';
 import { STATUS_OPTIONS } from '../../lib/status';
+import { GENRE_OPTIONS, normalizeGenre } from '../../lib/genres';
 import { resolveCover, refreshCover } from '../../lib/covers';
 import { useToast } from '../ui/ToastProvider';
 
@@ -169,11 +170,17 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
             <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100 inline-flex items-center gap-1">
               {book.isAudio && <Headphones size={13} className="text-stone-400" />}{book.totalPages} pages
             </span>
-            {book.genre && (
-              <span className="text-stone-500 text-sm font-medium px-3 py-1 bg-stone-50 rounded-full border border-stone-100">
-                {book.genre}
-              </span>
-            )}
+            <select
+              value={GENRE_OPTIONS.includes(book.genre) ? book.genre : (GENRE_OPTIONS.includes(normalizeGenre(book.genre)) ? normalizeGenre(book.genre) : 'Fiction')}
+              onChange={(e) => onUpdate({ genre: e.target.value })}
+              aria-label="Genre"
+              title="Change genre"
+              className="text-stone-600 text-sm font-medium pl-3 pr-2 py-1.5 bg-stone-50 rounded-full border border-stone-100 hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-400 cursor-pointer"
+            >
+              {GENRE_OPTIONS.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
             {book.status === 'read' && (
               <button
                 onClick={() => setShareOpen(true)}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Search, Plus, Check, Compass, RefreshCw } from 'lucide-react';
+import { Sparkles, Search, Plus, Check, Compass, Loader2 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/ToastProvider';
@@ -77,7 +77,7 @@ function DiscoverCard({ s, owned, onAdd }) {
           {s.author}
           {s.genre ? ` · ${s.genre}` : ''}
         </p>
-        <p className="text-sm text-stone-600 leading-relaxed line-clamp-4 flex-1">{s.summary || s.blurb}</p>
+        <p className="text-sm text-stone-600 leading-relaxed">{s.summary || s.blurb}</p>
         <div className="mt-3">
           {inLibrary || added ? (
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-read">
@@ -109,17 +109,19 @@ export default function DiscoverView({ books, onAdd }) {
   const toast = useToast();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [results, setResults] = useState([]);
   const [lastQuery, setLastQuery] = useState('');
   const seen = useRef(new Set());
 
-  const run = async (text) => {
-    const q = (text ?? query).trim();
-    if (!q) return;
+  const fetchIdeas = async (q, append) => {
+    if (append) setLoadingMore(true);
+    else {
+      setLoading(true);
+      setResults([]);
+    }
     setQuery(q);
     setLastQuery(q);
-    setLoading(true);
-    setResults([]);
     try {
       const seed = makeSeed();
       const avoid = [...books.map((b) => b.title), ...seen.current];
@@ -134,18 +136,25 @@ export default function DiscoverView({ books, onAdd }) {
       const fresh = parsed.filter((s) => !seen.current.has(s.title.toLowerCase()));
       const list = fresh.length ? fresh : parsed;
       list.forEach((s) => seen.current.add(s.title.toLowerCase()));
-      setResults(list);
+      setResults((prev) => (append ? [...prev, ...list] : list));
     } catch (e) {
-      setResults([]);
+      if (!append) setResults([]);
       toast.error(e.message || 'Could not fetch ideas. Try again.');
     } finally {
-      setLoading(false);
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }
   };
 
-  const pickMood = (m) => {
+  // A new search starts fresh; "show more" keeps and appends.
+  const search = (text) => {
+    const q = (text ?? query).trim();
+    if (!q) return;
     seen.current.clear();
-    run(m);
+    fetchIdeas(q, false);
+  };
+  const showMore = () => {
+    if (lastQuery) fetchIdeas(lastQuery, true);
   };
 
   if (guest) {
@@ -174,7 +183,7 @@ export default function DiscoverView({ books, onAdd }) {
 
       {/* Prompt */}
       <form
-        onSubmit={(e) => { e.preventDefault(); run(); }}
+        onSubmit={(e) => { e.preventDefault(); search(); }}
         className="max-w-2xl mx-auto flex gap-2 mb-4"
       >
         <div className="relative flex-1">
@@ -200,7 +209,7 @@ export default function DiscoverView({ books, onAdd }) {
         {MOODS.map((m) => (
           <button
             key={m}
-            onClick={() => pickMood(m)}
+            onClick={() => search(m)}
             className="text-sm text-stone-600 bg-surface border border-stone-200 rounded-full px-3.5 py-1.5 hover:border-brand-300 hover:text-brand-600 transition-colors"
           >
             {m}
@@ -215,19 +224,20 @@ export default function DiscoverView({ books, onAdd }) {
         </div>
       ) : results.length > 0 ? (
         <>
-          <div className="flex items-center justify-between max-w-5xl mx-auto mb-3 px-1">
-            <p className="text-sm text-stone-500">Ideas for “{lastQuery}”</p>
-            <button
-              onClick={() => run(lastQuery)}
-              className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-brand-600 transition-colors"
-            >
-              <RefreshCw size={14} /> More
-            </button>
-          </div>
-          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <p className="text-sm text-stone-500 max-w-5xl mx-auto mb-3 px-1">Ideas for “{lastQuery}”</p>
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             {results.map((s, i) => (
               <DiscoverCard key={`${s.title}-${i}`} s={s} owned={books} onAdd={onAdd} />
             ))}
+          </div>
+          <div className="text-center mt-8">
+            <button
+              onClick={showMore}
+              disabled={loadingMore}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-6 py-2.5 hover:bg-brand-100 disabled:opacity-60 transition-colors"
+            >
+              {loadingMore ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Show more
+            </button>
           </div>
         </>
       ) : (

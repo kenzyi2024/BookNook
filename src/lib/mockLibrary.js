@@ -31,6 +31,18 @@ export const clearDemoIds = () => {
   }
 };
 
+// Demo shelf gadgets are tagged in `caption` so we can remove exactly these on
+// toggle-off (the field is invisible for non-photo decor but persists in the DB).
+export const DEMO_TAG = '__demo__';
+export function buildMockGadgets() {
+  return [
+    { type: 'plant', variant: 'succulent', caption: DEMO_TAG, position: 2 },
+    { type: 'plant', variant: 'flowers', caption: DEMO_TAG, position: 6 },
+    { type: 'plant', variant: 'candle', caption: DEMO_TAG, position: 11 },
+    { type: 'plant', variant: 'clock', caption: DEMO_TAG, position: 16 },
+  ];
+}
+
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
 const color = (i) => SPINE_COLORS[i % SPINE_COLORS.length];
 
@@ -79,21 +91,22 @@ const QUOTES = [
   { page: 210, text: 'What is grief, if not love persevering?' },
 ];
 
-// A few reading sessions per active book, with recent consecutive days near the
-// top so the streak calendar and pages/month chart light up.
+// Reading sessions per active book: a recent streak (last few days) plus sessions
+// spread across the last ~11 months, so the streak calendar AND the pages/month
+// chart both fill in across the whole year.
 function sessionsFor(i, status) {
   if (status !== 'read' && status !== 'reading') return [];
   const out = [];
   // recent streak days (0..4 ago) seeded across the first books
   if (i < 5) out.push({ date: daysAgo(i), pagesRead: 24 + i * 6, percent: 0, minutes: 30 + i * 5, format: 'page', endPage: 0 });
-  const count = status === 'reading' ? 3 : 2 + (i % 3);
+  const count = status === 'reading' ? 5 : 4 + (i % 3);
   for (let k = 0; k < count; k++) {
-    const day = (i * 3 + k * 5 + 2) % 55;
+    const day = (i * 13 + k * 47 + 8) % 330; // scattered across ~11 months
     out.push({
       date: daysAgo(day),
-      pagesRead: 18 + ((i + k) % 6) * 11,
+      pagesRead: 16 + ((i + k) % 7) * 12,
       percent: 0,
-      minutes: 20 + ((i + k) % 4) * 15,
+      minutes: 20 + ((i + k) % 5) * 18,
       format: 'page',
       endPage: 0,
     });
@@ -103,7 +116,8 @@ function sessionsFor(i, status) {
 
 /** Fresh sample-book objects (no _id — the caller creates them). */
 export function buildMockBooks() {
-  return RAW.map(([title, author, genre, totalPages, status, rating, daysSinceFinish], i) => {
+  let readCount = 0;
+  return RAW.map(([title, author, genre, totalPages, status, rating], i) => {
     const book = {
       title,
       author,
@@ -123,14 +137,20 @@ export function buildMockBooks() {
     };
     if (status === 'read') {
       if (rating) book.rating = rating;
-      book.finishedAt = daysAgo(daysSinceFinish);
+      // Spread finishes ~monthly across the last year so the "finished / month"
+      // chart and "This Year" totals look full.
+      book.finishedAt = daysAgo(18 + readCount * 27);
+      readCount += 1;
     }
-    // Sprinkle notes, journal entries and quotes onto some books so the Notes
-    // tab and reading history aren't empty in the demo.
-    if ((status === 'read' || status === 'reading') && i % 2 === 0) {
+    // Notes, journal entries and quotes on most active books so the Notes tab
+    // and reading history showcase those features.
+    if (status === 'read' || status === 'reading') {
       book.notes = NOTES[i % NOTES.length];
-      book.journalEntries = [{ date: daysAgo(i + 3), text: JOURNAL[i % JOURNAL.length] }];
-      book.quotes = [QUOTES[i % QUOTES.length]];
+      book.journalEntries = [
+        { date: daysAgo(i + 4), text: JOURNAL[i % JOURNAL.length] },
+        { date: daysAgo(i + 22), text: JOURNAL[(i + 1) % JOURNAL.length] },
+      ];
+      book.quotes = [QUOTES[i % QUOTES.length], QUOTES[(i + 2) % QUOTES.length]];
     }
     return book;
   });

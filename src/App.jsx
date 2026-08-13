@@ -10,11 +10,11 @@ import { useApi } from './hooks/useApi';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './components/ui/ToastProvider';
-import { buildMockBooks, getDemoIds, setDemoIds, clearDemoIds } from './lib/mockLibrary';
+import { buildMockBooks, buildMockGadgets, DEMO_TAG, getDemoIds, setDemoIds, clearDemoIds } from './lib/mockLibrary';
 import { localBooks } from './lib/localBooks';
 
 export default function App() {
-  const { isAuthenticated, loading, user, logout, guest, converting, startAccountSave, cancelAccountSave } = useAuth();
+  const { isAuthenticated, loading, user, logout, guest, converting, startAccountSave, cancelAccountSave, updateProfile } = useAuth();
   const { setTheme } = useTheme();
   const api = useApi();
   const toast = useToast();
@@ -29,6 +29,7 @@ export default function App() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sampleLoaded, setSampleLoaded] = useState(() => getDemoIds().length > 0);
+  const [sampleBusy, setSampleBusy] = useState(false);
 
   // Load the signed-in user's library (scoped server-side by their user id).
   useEffect(() => {
@@ -96,30 +97,40 @@ export default function App() {
   }, [api]);
 
   const loadSample = async () => {
-    const ids = [];
-    let skipped = 0;
-    // Add each book independently so a duplicate title (409) just gets skipped
-    // instead of aborting the whole load.
-    for (const b of buildMockBooks()) {
-      try {
-        const saved = await api.createBook(b);
-        if (saved?._id) ids.push(saved._id);
-      } catch {
-        skipped += 1;
+    setSampleBusy(true);
+    try {
+      const ids = [];
+      let skipped = 0;
+      // Add each book independently so a duplicate title (409) just gets skipped
+      // instead of aborting the whole load.
+      for (const b of buildMockBooks()) {
+        try {
+          const saved = await api.createBook(b);
+          if (saved?._id) ids.push(saved._id);
+        } catch {
+          skipped += 1;
+        }
       }
-    }
-    setDemoIds(ids);
-    setSampleLoaded(ids.length > 0);
-    if (guest) setBooks(localBooks.all());
-    else await reloadBooks();
-    if (ids.length) {
-      toast.success(`Sample library loaded${skipped ? ` (${skipped} you already had were skipped)` : ''}.`);
-    } else {
-      toast.error('Those sample books are already in your library.');
+      setDemoIds(ids);
+      setSampleLoaded(ids.length > 0);
+      // Add demo shelf gadgets too (tagged so we can remove exactly these).
+      try {
+        const current = user?.shelfDecor || [];
+        await updateProfile({ shelfDecor: [...current, ...buildMockGadgets()] });
+      } catch {
+        /* ignore */
+      }
+      if (guest) setBooks(localBooks.all());
+      else await reloadBooks();
+      if (ids.length) toast.success(`Sample library loaded${skipped ? ` (${skipped} you already had were skipped)` : ''}.`);
+      else toast.error('Those sample books are already in your library.');
+    } finally {
+      setSampleBusy(false);
     }
   };
 
   const removeSample = async () => {
+    setSampleBusy(true);
     try {
       for (const id of getDemoIds()) {
         try {
@@ -130,11 +141,19 @@ export default function App() {
       }
       clearDemoIds();
       setSampleLoaded(false);
+      // Remove only the demo gadgets.
+      try {
+        const current = user?.shelfDecor || [];
+        const kept = current.filter((g) => g.caption !== DEMO_TAG);
+        if (kept.length !== current.length) await updateProfile({ shelfDecor: kept });
+      } catch {
+        /* ignore */
+      }
       if (guest) setBooks(localBooks.all());
       else await reloadBooks();
       toast.success('Sample data removed.');
-    } catch {
-      toast.error('Could not remove the sample data.');
+    } finally {
+      setSampleBusy(false);
     }
   };
 
@@ -168,7 +187,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-paper text-ink font-sans selection:bg-brand-200">
-      <Navbar activeTab={activeTab} onTab={goTo} onAdd={() => setShowAddModal(true)} user={user} onLogout={logout} />
+      <Navbar
+        activeTab={activeTab}
+        onTab={goTo}
+        onAdd={() => setShowAddModal(true)}
+        user={user}
+        onLogout={logout}
+        onToggleSample={toggleSample}
+        sampleLoaded={sampleLoaded}
+        sampleBusy={sampleBusy}
+      />
 
       {guest && (
         <div className="bg-brand-50 border-b border-brand-100 text-sm text-brand-800 px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">

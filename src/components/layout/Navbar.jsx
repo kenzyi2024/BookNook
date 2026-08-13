@@ -9,7 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
  * Top navigation: logo, view switcher, add-book, and a simple user menu
  * (avatar initial + email + logout).
  */
-export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
+export default function Navbar({ activeTab, onTab, onAdd, user, onLogout, onToggleSample, sampleLoaded, sampleBusy }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
@@ -141,7 +141,14 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
     </nav>
 
     {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
-    {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
+    {showAccount && (
+      <AccountModal
+        onClose={() => setShowAccount(false)}
+        onToggleSample={onToggleSample}
+        sampleLoaded={sampleLoaded}
+        sampleBusy={sampleBusy}
+      />
+    )}
     </>
   );
 }

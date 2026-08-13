@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Check, Loader2, Moon, Sun } from 'lucide-react';
+import { X, Camera, Check, Loader2, Moon, Sun, Wand2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../ui/ToastProvider';
@@ -9,7 +9,7 @@ import { fileToDataUrl } from '../../lib/image';
 /**
  * Account & personalization: profile picture, display name, and theme picker.
  */
-export default function AccountModal({ onClose }) {
+export default function AccountModal({ onClose, onToggleSample, sampleLoaded, sampleBusy }) {
   const { user, updateProfile } = useAuth();
   const { theme, setTheme, dark, toggleDark } = useTheme();
   const toast = useToast();
@@ -134,6 +134,30 @@ export default function AccountModal({ onClose }) {
             </button>
           ))}
         </div>
+
+        {/* Sample / demo data toggle */}
+        {onToggleSample && (
+          <div className="mt-6 pt-5 border-t border-stone-100">
+            <button
+              onClick={onToggleSample}
+              disabled={sampleBusy}
+              role="switch"
+              aria-checked={sampleLoaded}
+              className="w-full flex items-center justify-between gap-2 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 hover:border-brand-300 transition-colors disabled:opacity-60"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-ink">
+                {sampleBusy ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                Sample library
+              </span>
+              <span className={`relative w-10 h-5 rounded-full transition-colors ${sampleLoaded ? 'bg-brand-500' : 'bg-stone-300'}`}>
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${sampleLoaded ? 'left-5' : 'left-0.5'}`} />
+              </span>
+            </button>
+            <p className="text-xs text-stone-400 mt-1.5 px-1">
+              Fills your library with demo books, reading sessions, notes and gadgets. Toggle off to remove exactly what it added.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Search, Plus, Check, Compass, Loader2 } from 'lucide-react';
+import { Sparkles, Search, Plus, Check, Compass, Loader2, X } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/ToastProvider';
 import { resolveCover } from '../../lib/covers';
 import { randomSpine } from '../../lib/status';
+import { GENRE_OPTIONS } from '../../lib/genres';
 import { SUGGEST_FORMAT, parseSuggestions } from '../../lib/aiBooks';
 import BookLoader from '../ui/BookLoader';
 
@@ -24,7 +25,7 @@ const MOODS = [
   'Sweeping fantasy',
 ];
 
-function DiscoverCard({ s, owned, onAdd }) {
+function DiscoverCard({ s, owned, onAdd, onHide }) {
   const [cover, setCover] = useState({ coverUrl: '', spineColor: '' });
   const [added, setAdded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -58,7 +59,17 @@ function DiscoverCard({ s, owned, onAdd }) {
   };
 
   return (
-    <div className="bg-surface border border-stone-200 rounded-2xl p-4 flex gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all">
+    <div className="relative bg-surface border border-stone-200 rounded-2xl p-4 flex gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all group/card">
+      {onHide && (
+        <button
+          onClick={onHide}
+          aria-label="Not interested"
+          title="Not interested"
+          className="absolute top-2 right-2 text-stone-300 hover:text-status-dnf transition-colors opacity-0 group-hover/card:opacity-100 focus:opacity-100"
+        >
+          <X size={15} />
+        </button>
+      )}
       <div className="w-16 shrink-0">
         {cover.coverUrl ? (
           <img src={cover.coverUrl} alt="" className="w-16 h-24 object-cover rounded-lg shadow" />
@@ -72,7 +83,7 @@ function DiscoverCard({ s, owned, onAdd }) {
         )}
       </div>
       <div className="min-w-0 flex-1 flex flex-col">
-        <p className="font-display font-bold text-ink leading-snug line-clamp-2">{s.title}</p>
+        <p className="font-display font-bold text-ink leading-snug line-clamp-2 pr-5">{s.title}</p>
         <p className="text-xs text-stone-500 mb-1.5">
           {s.author}
           {s.genre ? ` · ${s.genre}` : ''}
@@ -113,6 +124,7 @@ export default function DiscoverView({ books, onAdd }) {
   const [results, setResults] = useState([]);
   const [lastQuery, setLastQuery] = useState('');
   const [length, setLength] = useState('any');
+  const [genre, setGenre] = useState('any');
   const seen = useRef(new Set());
 
   // A few of the reader's favorites, to power "Because you loved…" starters.
@@ -127,8 +139,9 @@ export default function DiscoverView({ books, onAdd }) {
       : len === 'long'
         ? ' Prefer longer books (around 500+ pages).'
         : '';
+  const genreHint = (g) => (g && g !== 'any' ? ` Focus on the ${g} genre.` : '');
 
-  const fetchIdeas = async (q, append, len = length) => {
+  const fetchIdeas = async (q, append, len = length, gen = genre) => {
     if (append) setLoadingMore(true);
     else {
       setLoading(true);
@@ -140,7 +153,7 @@ export default function DiscoverView({ books, onAdd }) {
       const seed = makeSeed();
       const avoid = [...books.map((b) => b.title), ...seen.current];
       const prompt =
-        `A reader is looking for: "${q}". Recommend 6 books that fit this mood or request.${lenHint(len)} ` +
+        `A reader is looking for: "${q}". Recommend 6 books that fit this mood or request.${lenHint(len)}${genreHint(gen)} ` +
         (avoid.length ? `Avoid these: ${avoid.map((t) => `"${t}"`).join(', ')}. ` : '') +
         `Offer real, well-regarded variety (seed ${seed}). ${SUGGEST_FORMAT}`;
       const raw = await api.generateAI(prompt);
@@ -174,8 +187,19 @@ export default function DiscoverView({ books, onAdd }) {
     setLength(l);
     if (lastQuery) {
       seen.current.clear();
-      fetchIdeas(lastQuery, false, l);
+      fetchIdeas(lastQuery, false, l, genre);
     }
+  };
+  const changeGenre = (g) => {
+    setGenre(g);
+    if (lastQuery) {
+      seen.current.clear();
+      fetchIdeas(lastQuery, false, length, g);
+    }
+  };
+  const hide = (s) => {
+    seen.current.add(s.title.toLowerCase());
+    setResults((prev) => prev.filter((r) => r !== s));
   };
 
   if (guest) {
@@ -254,8 +278,8 @@ export default function DiscoverView({ books, onAdd }) {
         ))}
       </div>
 
-      {/* Length preference */}
-      <div className="flex justify-center mb-8">
+      {/* Refine: length + genre */}
+      <div className="flex flex-wrap justify-center items-center gap-2 mb-8">
         <div className="inline-flex bg-surface border border-stone-200 rounded-full p-1">
           {[['any', 'Any length'], ['short', 'Short'], ['long', 'Long']].map(([id, label]) => (
             <button
@@ -269,6 +293,17 @@ export default function DiscoverView({ books, onAdd }) {
             </button>
           ))}
         </div>
+        <select
+          value={genre}
+          onChange={(e) => changeGenre(e.target.value)}
+          aria-label="Genre"
+          className="text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full px-4 py-2 hover:border-brand-300 transition-colors cursor-pointer"
+        >
+          <option value="any">Any genre</option>
+          {GENRE_OPTIONS.map((g) => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
       </div>
 
       {/* Results */}
@@ -281,7 +316,7 @@ export default function DiscoverView({ books, onAdd }) {
           <p className="text-sm text-stone-500 max-w-5xl mx-auto mb-3 px-1">Ideas for “{lastQuery}”</p>
           <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             {results.map((s, i) => (
-              <DiscoverCard key={`${s.title}-${i}`} s={s} owned={books} onAdd={onAdd} />
+              <DiscoverCard key={`${s.title}-${i}`} s={s} owned={books} onAdd={onAdd} onHide={() => hide(s)} />
             ))}
           </div>
           <div className="text-center mt-8">

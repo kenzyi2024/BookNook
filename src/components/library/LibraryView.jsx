@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown, Search, MoreHorizontal } from 'lucide-react';
 import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
 import { SORT_OPTIONS, sortBooks } from '../../lib/sortBooks';
 import { getGadgetPos, setGadgetPos } from '../../lib/gadgetPos';
@@ -90,6 +90,14 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   const [showGadget, setShowGadget] = useState(false);
   const [sort, setSort] = useState('added_desc');
   const [posBump, setPosBump] = useState(0);
+  const [query, setQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
 
   const decor = user?.shelfDecor || [];
   const addGadget = (g) => updateProfile({ shelfDecor: [...decor, { ...g, position: books.length }] });
@@ -110,6 +118,8 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
 
   const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
   const sorted = sortBooks(filtered, sort);
+  const q = query.trim().toLowerCase();
+  const searched = q ? sorted.filter((b) => `${b.title} ${b.author}`.toLowerCase().includes(q)) : sorted;
 
   // Persist a resolved cover/tint to the DB (best-effort; self-heals existing books).
   const persistCover = (id, patch) => {
@@ -245,62 +255,116 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   // --- Unified view: one shelf + filter chips ---
   return (
     <div className="mt-8 mb-20 animate-in fade-in duration-500" data-pos={posBump}>
-      <div className="mb-5 space-y-3">
-        {/* Row 1 — status filters (left) + sort (right) */}
-        <div className="relative z-40 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {FILTERS.map((f) => {
-              const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    filter === f.id ? 'bg-brand-500 text-white' : 'bg-surface text-stone-600 border border-stone-200 hover:border-brand-300'
-                  }`}
-                >
-                  {f.label} <span className={filter === f.id ? 'text-white/70' : 'text-stone-400'}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="relative">
-            <ArrowUpDown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="appearance-none text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full pl-9 pr-4 py-2 hover:border-brand-300 transition-colors cursor-pointer"
-              aria-label="Sort books"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>{o.label}</option>
-              ))}
-            </select>
-          </div>
+      {/* Toolbar — one clean bar: filters + search + sort · view + more */}
+      <div className="relative z-40 mb-4 flex flex-wrap items-center gap-2">
+        {/* segmented status filters */}
+        <div className="inline-flex bg-surface border border-stone-200 rounded-full p-1">
+          {FILTERS.map((f) => {
+            const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
+            const active = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  active ? 'bg-brand-500 text-white' : 'text-stone-600 hover:text-brand-600'
+                }`}
+              >
+                {f.label} <span className={active ? 'text-white/70' : 'text-stone-400'}>{count}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Row 2 — actions (left) + view toggle (right) */}
-        <div className="relative z-40 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
+        {/* search */}
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search title or author"
+            aria-label="Search your library"
+            className="w-44 focus:w-56 transition-all bg-surface border border-stone-200 rounded-full pl-9 pr-3 py-2 text-sm text-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          />
+        </div>
+
+        {/* sort */}
+        <div className="relative">
+          <ArrowUpDown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="appearance-none text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full pl-9 pr-4 py-2 hover:border-brand-300 transition-colors cursor-pointer"
+            aria-label="Sort books"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* right cluster: view mode + overflow */}
+        <div className="ml-auto flex items-center gap-2">
+          <div className="inline-flex bg-surface border border-stone-200 rounded-full p-1">
             <button
-              onClick={() => getSuggestions('history')}
-              disabled={books.length === 0}
-              className="flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
+              onClick={() => setSeparated(false)}
+              title="One shelf"
+              aria-label="One shelf"
+              className={`p-1.5 rounded-full transition-colors ${!separated ? 'bg-brand-50 text-brand-600' : 'text-stone-500 hover:text-brand-600'}`}
             >
-              <Sparkles size={15} /> Up Next
+              <Rows3 size={16} />
             </button>
             <button
-              onClick={() => setShowGadget(true)}
-              className="flex items-center gap-1.5 text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full px-4 py-2 hover:border-brand-300 transition-colors"
+              onClick={() => setSeparated(true)}
+              title="Group by status"
+              aria-label="Group by status"
+              className={`p-1.5 rounded-full transition-colors ${separated ? 'bg-brand-50 text-brand-600' : 'text-stone-500 hover:text-brand-600'}`}
             >
-              <Sprout size={15} /> Add gadget
+              <LayoutGrid size={16} />
             </button>
           </div>
-          {ToggleBtn}
+
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="More options"
+              aria-expanded={menuOpen}
+              className="p-2 rounded-full bg-surface border border-stone-200 text-stone-500 hover:text-brand-600 hover:border-brand-300 transition-colors"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-44 bg-surface border border-stone-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
+                <button
+                  onClick={() => { setMenuOpen(false); setShowGadget(true); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <Sprout size={16} /> Decorate shelf
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* For You recommendations */}
+      {/* Library title + Up Next */}
+      <div className="relative z-20 flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />
+          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm truncate">
+            {filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
+          </h2>
+        </div>
+        <button
+          onClick={() => getSuggestions('history')}
+          disabled={books.length === 0}
+          className="shrink-0 flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
+        >
+          <Sparkles size={15} /> Up Next
+        </button>
+      </div>
+
+      {/* Recommendations — their own space, below the title */}
       {(loadingType === 'history' || (suggestionsType === 'history' && suggestions.length > 0)) && (
         <div className="relative z-40 mb-6">
           {loadingType === 'history' ? (
@@ -320,22 +384,16 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
         </div>
       )}
 
-      {/* Library title */}
-      <div className="relative z-20 flex items-center gap-3 mb-3">
-        <Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />
-        <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">
-          {filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
-        </h2>
-      </div>
-
       {books.length === 0 ? (
         <EmptyLibrary suggestBlock={suggestBlock} inline />
-      ) : sorted.length === 0 ? (
-        <div className="text-stone-400 italic py-10">No books in this filter.</div>
+      ) : searched.length === 0 ? (
+        <div className="text-stone-400 italic py-10">
+          {query ? `No books match “${query}”.` : 'No books in this filter — try another tab.'}
+        </div>
       ) : (
         <Bookcase
-          books={sorted}
-          decor={filter === 'all' ? decorPositioned : []}
+          books={searched}
+          decor={filter === 'all' && !q ? decorPositioned : []}
           onSelect={onSelect}
           onPersistCover={persistCover}
           onPlaceGadget={placeGadget}

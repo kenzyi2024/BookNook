@@ -112,9 +112,23 @@ export default function DiscoverView({ books, onAdd }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [results, setResults] = useState([]);
   const [lastQuery, setLastQuery] = useState('');
+  const [length, setLength] = useState('any');
   const seen = useRef(new Set());
 
-  const fetchIdeas = async (q, append) => {
+  // A few of the reader's favorites, to power "Because you loved…" starters.
+  const topBooks = books
+    .filter((b) => b.status === 'read')
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 3);
+
+  const lenHint = (len) =>
+    len === 'short'
+      ? ' Prefer books under ~350 pages.'
+      : len === 'long'
+        ? ' Prefer longer books (around 500+ pages).'
+        : '';
+
+  const fetchIdeas = async (q, append, len = length) => {
     if (append) setLoadingMore(true);
     else {
       setLoading(true);
@@ -126,7 +140,7 @@ export default function DiscoverView({ books, onAdd }) {
       const seed = makeSeed();
       const avoid = [...books.map((b) => b.title), ...seen.current];
       const prompt =
-        `A reader is looking for: "${q}". Recommend 6 books that fit this mood or request. ` +
+        `A reader is looking for: "${q}". Recommend 6 books that fit this mood or request.${lenHint(len)} ` +
         (avoid.length ? `Avoid these: ${avoid.map((t) => `"${t}"`).join(', ')}. ` : '') +
         `Offer real, well-regarded variety (seed ${seed}). ${SUGGEST_FORMAT}`;
       const raw = await api.generateAI(prompt);
@@ -155,6 +169,13 @@ export default function DiscoverView({ books, onAdd }) {
   };
   const showMore = () => {
     if (lastQuery) fetchIdeas(lastQuery, true);
+  };
+  const changeLength = (l) => {
+    setLength(l);
+    if (lastQuery) {
+      seen.current.clear();
+      fetchIdeas(lastQuery, false, l);
+    }
   };
 
   if (guest) {
@@ -204,8 +225,24 @@ export default function DiscoverView({ books, onAdd }) {
         </button>
       </form>
 
+      {/* Because you loved … */}
+      {topBooks.length > 0 && (
+        <div className="max-w-3xl mx-auto flex flex-wrap justify-center items-center gap-2 mb-3">
+          <span className="text-xs text-stone-400 uppercase tracking-wider">Because you loved</span>
+          {topBooks.map((b) => (
+            <button
+              key={b._id}
+              onClick={() => search(`books similar to "${b.title}" by ${b.author}`)}
+              className="text-sm text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-3.5 py-1.5 hover:bg-brand-100 transition-colors"
+            >
+              {b.title.length > 26 ? `${b.title.slice(0, 26)}…` : b.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Mood chips */}
-      <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-2 mb-8">
+      <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-2 mb-4">
         {MOODS.map((m) => (
           <button
             key={m}
@@ -215,6 +252,23 @@ export default function DiscoverView({ books, onAdd }) {
             {m}
           </button>
         ))}
+      </div>
+
+      {/* Length preference */}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex bg-surface border border-stone-200 rounded-full p-1">
+          {[['any', 'Any length'], ['short', 'Short'], ['long', 'Long']].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => changeLength(id)}
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                length === id ? 'bg-brand-500 text-white' : 'text-stone-600 hover:text-brand-600'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Results */}

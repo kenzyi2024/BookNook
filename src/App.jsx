@@ -4,6 +4,7 @@ import Navbar from './components/layout/Navbar';
 import AuthPage from './components/auth/AuthPage';
 import LibraryView from './components/library/LibraryView';
 import MetricsView from './components/metrics/MetricsView';
+import DiscoverView from './components/discover/DiscoverView';
 import BookDetailView from './components/book/BookDetailView';
 import AddBookModal from './components/book/AddBookModal';
 import { useApi } from './hooks/useApi';
@@ -227,6 +228,8 @@ export default function App() {
             sampleLoaded={sampleLoaded}
             onClearLibrary={guest ? clearLibrary : undefined}
           />
+        ) : activeTab === 'discover' ? (
+          <DiscoverView books={books} onAdd={handleAddBook} />
         ) : (
           <MetricsView books={books} />
         )}

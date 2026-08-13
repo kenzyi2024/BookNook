@@ -78,7 +78,7 @@ const STATUS_SHELVES = [
   { id: 'dnf', title: 'Set Aside', icon: Library },
 ];
 
-export default function LibraryView({ books, onSelect, onAddBook, onLoadSample, onClearLibrary }) {
+export default function LibraryView({ books, onSelect, onAddBook, onToggleSample, sampleLoaded, onClearLibrary }) {
   const toast = useToast();
   const api = useApi();
   const { user, updateProfile } = useAuth();
@@ -235,7 +235,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onLoadSample, 
       <div className="mt-8 mb-20 animate-in fade-in duration-500">
         <div className="relative z-40 flex justify-end mb-4">{ToggleBtn}</div>
         {shelves.length === 0 ? (
-          <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={onLoadSample} />
+          <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={!sampleLoaded ? onToggleSample : undefined} />
         ) : (
           <div className="space-y-28">
             {shelves.map((s, i) => (
@@ -345,12 +345,12 @@ export default function LibraryView({ books, onSelect, onAddBook, onLoadSample, 
                 >
                   <Sprout size={16} /> Decorate shelf
                 </button>
-                {onLoadSample && (
+                {onToggleSample && (
                   <button
-                    onClick={() => { setMenuOpen(false); onLoadSample(); }}
+                    onClick={() => { setMenuOpen(false); onToggleSample(); }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
                   >
-                    <Wand2 size={16} /> Load sample library
+                    <Wand2 size={16} /> {sampleLoaded ? 'Remove sample data' : 'Load sample library'}
                   </button>
                 )}
                 {onClearLibrary && (
@@ -405,7 +405,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onLoadSample, 
       )}
 
       {books.length === 0 ? (
-        <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={onLoadSample} inline />
+        <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={!sampleLoaded ? onToggleSample : undefined} inline />
       ) : searched.length === 0 ? (
         <div className="text-stone-400 italic py-10">
           {query ? `No books match “${query}”.` : 'No books in this filter — try another tab.'}

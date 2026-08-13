@@ -10,7 +10,7 @@ import { useApi } from './hooks/useApi';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './components/ui/ToastProvider';
-import { buildMockBooks } from './lib/mockLibrary';
+import { buildMockBooks, getDemoIds, setDemoIds, clearDemoIds } from './lib/mockLibrary';
 import { localBooks } from './lib/localBooks';
 
 export default function App() {
@@ -28,6 +28,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('library');
   const [selectedBook, setSelectedBook] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sampleLoaded, setSampleLoaded] = useState(() => getDemoIds().length > 0);
 
   // Load the signed-in user's library (scoped server-side by their user id).
   useEffect(() => {
@@ -96,7 +97,13 @@ export default function App() {
 
   const loadSample = async () => {
     try {
-      for (const b of buildMockBooks()) await api.createBook(b);
+      const ids = [];
+      for (const b of buildMockBooks()) {
+        const saved = await api.createBook(b);
+        if (saved?._id) ids.push(saved._id);
+      }
+      setDemoIds(ids);
+      setSampleLoaded(true);
       if (guest) setBooks(localBooks.all());
       else await reloadBooks();
       toast.success('Sample library loaded!');
@@ -105,8 +112,31 @@ export default function App() {
     }
   };
 
+  const removeSample = async () => {
+    try {
+      for (const id of getDemoIds()) {
+        try {
+          await api.deleteBook(id);
+        } catch {
+          /* already gone */
+        }
+      }
+      clearDemoIds();
+      setSampleLoaded(false);
+      if (guest) setBooks(localBooks.all());
+      else await reloadBooks();
+      toast.success('Sample data removed.');
+    } catch {
+      toast.error('Could not remove the sample data.');
+    }
+  };
+
+  const toggleSample = () => (sampleLoaded ? removeSample() : loadSample());
+
   const clearLibrary = () => {
     localBooks.clear();
+    clearDemoIds();
+    setSampleLoaded(false);
     setBooks([]);
     toast.success('Library cleared.');
   };
@@ -155,7 +185,8 @@ export default function App() {
             books={books}
             onSelect={setSelectedBook}
             onAddBook={handleAddBook}
-            onLoadSample={loadSample}
+            onToggleSample={toggleSample}
+            sampleLoaded={sampleLoaded}
             onClearLibrary={guest ? clearLibrary : undefined}
           />
         ) : (

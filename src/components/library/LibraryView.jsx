@@ -12,6 +12,7 @@ import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/ToastProvider';
+import Button from '../ui/Button';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -321,13 +322,14 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
             {filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
           </h2>
         </div>
-        <button
+        <Button
+          variant="soft"
           onClick={() => getSuggestions('history')}
           disabled={books.length === 0}
-          className="shrink-0 flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
+          className="shrink-0"
         >
           <Sparkles size={15} /> Up Next
-        </button>
+        </Button>
       </div>
 
       {/* Recommendations — their own space, below the title */}

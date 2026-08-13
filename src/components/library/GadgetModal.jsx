@@ -4,6 +4,7 @@ import { FRAMES, frameClass } from '../../lib/gadgets';
 import { ACCESSORIES, GadgetArt } from '../../lib/gadgetArt';
 import { fileToDataUrl } from '../../lib/image';
 import { useToast } from '../ui/ToastProvider';
+import Button from '../ui/Button';
 
 /**
  * Add a shelf decoration: a plant, or a framed photo the user uploads.
@@ -127,13 +128,9 @@ export default function GadgetModal({ onAdd, onClose }) {
           </div>
         )}
 
-        <button
-          onClick={add}
-          disabled={busy}
-          className="w-full mt-6 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold py-3 rounded-full flex items-center justify-center gap-2 transition-colors"
-        >
+        <Button onClick={add} disabled={busy} size="lg" className="w-full mt-6 text-sm">
           {busy && <Loader2 size={16} className="animate-spin" />} Add to shelf
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import { randomSpine } from '../../lib/status';
 import { GENRE_OPTIONS } from '../../lib/genres';
 import { SUGGEST_FORMAT, parseSuggestions } from '../../lib/aiBooks';
 import BookLoader from '../ui/BookLoader';
+import Button from '../ui/Button';
+import Chip from '../ui/Chip';
 
 // Module scope keeps the impure call out of render-purity checks.
 const makeSeed = () => Math.random().toString(36).slice(2);
@@ -100,13 +102,9 @@ function DiscoverCard({ s, owned, onAdd, onHide }) {
               <Check size={14} /> {added ? 'Added to Want to Read' : 'In your library'}
             </span>
           ) : (
-            <button
-              onClick={add}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-3.5 py-1.5 hover:bg-brand-100 disabled:opacity-50 transition-colors"
-            >
+            <Button variant="soft" size="sm" onClick={add} disabled={busy}>
               <Plus size={15} /> Add to shelf
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -280,20 +278,11 @@ export default function DiscoverView({ books, onAdd }) {
 
       {/* Mood chips */}
       <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-2 mb-4">
-        <button
-          onClick={surprise}
-          className="text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-3.5 py-1.5 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
-        >
+        <Button variant="soft" size="sm" onClick={surprise}>
           <Sparkles size={14} /> Surprise me
-        </button>
+        </Button>
         {MOODS.map((m) => (
-          <button
-            key={m}
-            onClick={() => search(m)}
-            className="text-sm text-stone-600 bg-surface border border-stone-200 rounded-full px-3.5 py-1.5 hover:border-brand-300 hover:text-brand-600 transition-colors"
-          >
-            {m}
-          </button>
+          <Chip key={m} onClick={() => search(m)}>{m}</Chip>
         ))}
       </div>
 
@@ -339,13 +328,9 @@ export default function DiscoverView({ books, onAdd }) {
             ))}
           </div>
           <div className="text-center mt-8">
-            <button
-              onClick={showMore}
-              disabled={loadingMore}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-6 py-2.5 hover:bg-brand-100 disabled:opacity-60 transition-colors"
-            >
+            <Button variant="soft" onClick={showMore} disabled={loadingMore} className="px-6">
               {loadingMore ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Show more
-            </button>
+            </Button>
           </div>
         </>
       ) : (

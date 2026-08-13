@@ -10,7 +10,8 @@ import { useApi } from './hooks/useApi';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './components/ui/ToastProvider';
-import { buildMockBooks, buildMockGadgets, DEMO_TAG, getDemoIds, setDemoIds, clearDemoIds } from './lib/mockLibrary';
+import { buildMockBooks, buildMockGadgets, DEMO_TAG, isDemoBook } from './lib/mockLibrary';
+import { setGadgetPos } from './lib/gadgetPos';
 import { localBooks } from './lib/localBooks';
 
 export default function App() {
@@ -28,8 +29,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('library');
   const [selectedBook, setSelectedBook] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [sampleLoaded, setSampleLoaded] = useState(() => getDemoIds().length > 0);
   const [sampleBusy, setSampleBusy] = useState(false);
+  const sampleLoaded = books.some(isDemoBook);
 
   // Load the signed-in user's library (scoped server-side by their user id).
   useEffect(() => {
@@ -99,30 +100,37 @@ export default function App() {
   const loadSample = async () => {
     setSampleBusy(true);
     try {
-      const ids = [];
+      const before = books.length;
+      let added = 0;
       let skipped = 0;
-      // Add each book independently so a duplicate title (409) just gets skipped
-      // instead of aborting the whole load.
+      // Add each book independently so a duplicate title (409) just gets skipped.
       for (const b of buildMockBooks()) {
         try {
           const saved = await api.createBook(b);
-          if (saved?._id) ids.push(saved._id);
+          if (saved?._id) added += 1;
         } catch {
           skipped += 1;
         }
       }
-      setDemoIds(ids);
-      setSampleLoaded(ids.length > 0);
-      // Add demo shelf gadgets too (tagged so we can remove exactly these).
+      // Scatter demo gadgets across the shelves.
       try {
-        const current = user?.shelfDecor || [];
-        await updateProfile({ shelfDecor: [...current, ...buildMockGadgets()] });
+        const gadgets = buildMockGadgets(before + added);
+        const updated = await updateProfile({ shelfDecor: [...(user?.shelfDecor || []), ...gadgets] });
+        const decor = updated?.shelfDecor;
+        if (decor) {
+          decor
+            .filter((g) => g.caption === DEMO_TAG)
+            .slice(-gadgets.length)
+            .forEach((g, idx) => {
+              if (g._id) setGadgetPos(g._id, gadgets[idx].position);
+            });
+        }
       } catch {
         /* ignore */
       }
       if (guest) setBooks(localBooks.all());
       else await reloadBooks();
-      if (ids.length) toast.success(`Sample library loaded${skipped ? ` (${skipped} you already had were skipped)` : ''}.`);
+      if (added) toast.success(`Sample library loaded${skipped ? ` (${skipped} you already had were skipped)` : ''}.`);
       else toast.error('Those sample books are already in your library.');
     } finally {
       setSampleBusy(false);
@@ -132,16 +140,13 @@ export default function App() {
   const removeSample = async () => {
     setSampleBusy(true);
     try {
-      for (const id of getDemoIds()) {
+      for (const b of books.filter(isDemoBook)) {
         try {
-          await api.deleteBook(id);
+          await api.deleteBook(b._id);
         } catch {
           /* already gone */
         }
       }
-      clearDemoIds();
-      setSampleLoaded(false);
-      // Remove only the demo gadgets.
       try {
         const current = user?.shelfDecor || [];
         const kept = current.filter((g) => g.caption !== DEMO_TAG);
@@ -161,8 +166,6 @@ export default function App() {
 
   const clearLibrary = () => {
     localBooks.clear();
-    clearDemoIds();
-    setSampleLoaded(false);
     setBooks([]);
     toast.success('Library cleared.');
   };

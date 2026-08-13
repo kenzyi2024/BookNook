@@ -114,15 +114,16 @@ function Pie({ data, donut = false }) {
 function Bars({ data, color = 'var(--color-brand-500)' }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   if (!data.some((d) => d.value > 0))
-    return <div className="h-40 flex items-center justify-center text-stone-400 italic">No data yet</div>;
+    return <div className="h-44 flex items-center justify-center text-stone-400 italic">No sessions logged yet</div>;
   return (
-    <div className="flex items-end gap-1.5 h-40">
+    <div className="flex items-end gap-1.5 h-44">
       {data.map((d, i) => (
         <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+          <span className="text-[10px] font-semibold text-stone-500 tabular-nums h-3 leading-none">{d.value || ''}</span>
           <div className="w-full flex-1 flex items-end">
             <div
-              className="w-full rounded-t-md transition-all group-hover:opacity-80 relative"
-              style={{ height: `${(d.value / max) * 100}%`, backgroundColor: color, minHeight: d.value ? '3px' : '0' }}
+              className="w-full rounded-t-md transition-all group-hover:opacity-80"
+              style={{ height: `${(d.value / max) * 100}%`, backgroundColor: color, minHeight: d.value ? '8px' : '0' }}
               title={`${d.label}: ${d.value}`}
             />
           </div>

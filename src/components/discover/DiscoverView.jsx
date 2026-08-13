@@ -25,6 +25,11 @@ const MOODS = [
   'Sweeping fantasy',
 ];
 
+const randomMood = () => MOODS[Math.floor(Math.random() * MOODS.length)];
+
+// Persist the last Discover session across tab switches (survives remount).
+const cache = { query: '', lastQuery: '', length: 'any', genre: 'any', results: [], seen: new Set() };
+
 function DiscoverCard({ s, owned, onAdd, onHide }) {
   const [cover, setCover] = useState({ coverUrl: '', spineColor: '' });
   const [added, setAdded] = useState(false);
@@ -118,14 +123,21 @@ export default function DiscoverView({ books, onAdd }) {
   const api = useApi();
   const { guest } = useAuth();
   const toast = useToast();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(cache.query);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [results, setResults] = useState([]);
-  const [lastQuery, setLastQuery] = useState('');
-  const [length, setLength] = useState('any');
-  const [genre, setGenre] = useState('any');
-  const seen = useRef(new Set());
+  const [results, setResults] = useState(cache.results);
+  const [lastQuery, setLastQuery] = useState(cache.lastQuery);
+  const [length, setLength] = useState(cache.length);
+  const [genre, setGenre] = useState(cache.genre);
+  const seen = useRef(cache.seen);
+
+  // Mirror to the module cache so leaving/returning to the tab restores state.
+  useEffect(() => { cache.query = query; }, [query]);
+  useEffect(() => { cache.lastQuery = lastQuery; }, [lastQuery]);
+  useEffect(() => { cache.length = length; }, [length]);
+  useEffect(() => { cache.genre = genre; }, [genre]);
+  useEffect(() => { cache.results = results; }, [results]);
 
   // A few of the reader's favorites, to power "Because you loved…" starters.
   const topBooks = books
@@ -201,6 +213,7 @@ export default function DiscoverView({ books, onAdd }) {
     seen.current.add(s.title.toLowerCase());
     setResults((prev) => prev.filter((r) => r !== s));
   };
+  const surprise = () => search(randomMood());
 
   if (guest) {
     return (
@@ -267,6 +280,12 @@ export default function DiscoverView({ books, onAdd }) {
 
       {/* Mood chips */}
       <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-2 mb-4">
+        <button
+          onClick={surprise}
+          className="text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-3.5 py-1.5 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
+        >
+          <Sparkles size={14} /> Surprise me
+        </button>
         {MOODS.map((m) => (
           <button
             key={m}

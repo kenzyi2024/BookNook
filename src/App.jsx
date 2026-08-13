@@ -96,19 +96,26 @@ export default function App() {
   }, [api]);
 
   const loadSample = async () => {
-    try {
-      const ids = [];
-      for (const b of buildMockBooks()) {
+    const ids = [];
+    let skipped = 0;
+    // Add each book independently so a duplicate title (409) just gets skipped
+    // instead of aborting the whole load.
+    for (const b of buildMockBooks()) {
+      try {
         const saved = await api.createBook(b);
         if (saved?._id) ids.push(saved._id);
+      } catch {
+        skipped += 1;
       }
-      setDemoIds(ids);
-      setSampleLoaded(true);
-      if (guest) setBooks(localBooks.all());
-      else await reloadBooks();
-      toast.success('Sample library loaded!');
-    } catch {
-      toast.error('Could not load the sample library.');
+    }
+    setDemoIds(ids);
+    setSampleLoaded(ids.length > 0);
+    if (guest) setBooks(localBooks.all());
+    else await reloadBooks();
+    if (ids.length) {
+      toast.success(`Sample library loaded${skipped ? ` (${skipped} you already had were skipped)` : ''}.`);
+    } else {
+      toast.error('Those sample books are already in your library.');
     }
   };
 

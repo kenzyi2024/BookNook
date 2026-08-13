@@ -99,10 +99,9 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     ...g,
     position: getGadgetPos(g._id) ?? g.position ?? books.length,
   }));
-  const moveGadget = (idx, dir) => {
+  const placeGadget = (idx, position) => {
     const g = decor[idx];
-    const cur = getGadgetPos(g._id) ?? g.position ?? books.length;
-    const pos = Math.max(0, Math.min(books.length, cur + dir));
+    const pos = Math.max(0, Math.min(books.length, position));
     setGadgetPos(g._id, pos);
     setPosBump((b) => b + 1); // instant re-render
     // best-effort DB sync (persists once the backend has the position field)
@@ -247,26 +246,24 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   return (
     <div className="mt-8 mb-20 animate-in fade-in duration-500" data-pos={posBump}>
       <div className="mb-5 space-y-3">
-        {/* Row 1 — status filters */}
-        <div className="relative z-40 flex flex-wrap gap-2">
-          {FILTERS.map((f) => {
-            const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  filter === f.id ? 'bg-brand-500 text-white' : 'bg-surface text-stone-600 border border-stone-200 hover:border-brand-300'
-                }`}
-              >
-                {f.label} <span className={filter === f.id ? 'text-white/70' : 'text-stone-400'}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Row 2 — sort + actions */}
-        <div className="relative z-40 flex flex-wrap items-center gap-2">
+        {/* Row 1 — status filters (left) + sort (right) */}
+        <div className="relative z-40 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => {
+              const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    filter === f.id ? 'bg-brand-500 text-white' : 'bg-surface text-stone-600 border border-stone-200 hover:border-brand-300'
+                  }`}
+                >
+                  {f.label} <span className={filter === f.id ? 'text-white/70' : 'text-stone-400'}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
           <div className="relative">
             <ArrowUpDown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
             <select
@@ -280,20 +277,26 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
               ))}
             </select>
           </div>
-          <button
-            onClick={() => getSuggestions('history')}
-            disabled={books.length === 0}
-            className="flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
-          >
-            <Sparkles size={15} /> Up Next
-          </button>
-          <button
-            onClick={() => setShowGadget(true)}
-            className="flex items-center gap-1.5 text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full px-4 py-2 hover:border-brand-300 transition-colors"
-          >
-            <Sprout size={15} /> Add gadget
-          </button>
-          <div className="ml-auto">{ToggleBtn}</div>
+        </div>
+
+        {/* Row 2 — actions (left) + view toggle (right) */}
+        <div className="relative z-40 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => getSuggestions('history')}
+              disabled={books.length === 0}
+              className="flex items-center gap-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-2 hover:bg-brand-100 disabled:opacity-50 transition-colors"
+            >
+              <Sparkles size={15} /> Up Next
+            </button>
+            <button
+              onClick={() => setShowGadget(true)}
+              className="flex items-center gap-1.5 text-sm font-medium text-stone-600 bg-surface border border-stone-200 rounded-full px-4 py-2 hover:border-brand-300 transition-colors"
+            >
+              <Sprout size={15} /> Add gadget
+            </button>
+          </div>
+          {ToggleBtn}
         </div>
       </div>
 
@@ -335,7 +338,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
           decor={filter === 'all' ? decorPositioned : []}
           onSelect={onSelect}
           onPersistCover={persistCover}
-          onMoveGadget={moveGadget}
+          onPlaceGadget={placeGadget}
           onRemoveGadget={removeGadget}
         />
       )}

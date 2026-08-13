@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import BookSpine from './BookSpine';
 import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { GadgetArt } from '../../lib/gadgetArt';
@@ -8,43 +8,50 @@ import { frameClass } from '../../lib/gadgets';
 // Approximate max slot width used to estimate how many items fit per shelf.
 const SLOT = 82;
 
-function GadgetSlot({ gadget, onMoveLeft, onMoveRight, onRemove }) {
+function GadgetSlot({ gadget, dragging, onDragStart, onDragEnd, onRemove }) {
   return (
-    <div className="relative group/gadget shrink-0 w-20 flex items-end justify-center self-end pb-1">
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'gadget');
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+      title="Drag to move"
+      className={`relative group/gadget shrink-0 w-20 flex items-end justify-center self-end pb-1 cursor-grab active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
+    >
       {gadget.type === 'photo' ? (
-        <div className={frameClass(gadget.frame)} title={gadget.caption || ''}>
+        <div className={`${frameClass(gadget.frame)} pointer-events-none`} title={gadget.caption || ''}>
           <img src={gadget.image} alt={gadget.caption || 'photo'} className="w-20 h-28 object-cover" />
         </div>
       ) : (
-        <div className="w-full h-28 flex items-end justify-center">
+        <div className="w-full h-28 flex items-end justify-center pointer-events-none">
           <GadgetArt variant={gadget.variant} className="w-full h-full drop-shadow-md" />
         </div>
       )}
 
-      {/* hover controls: nudge left/right along the shelf, or remove */}
-      <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/gadget:opacity-100 transition-opacity">
-        <button onClick={onMoveLeft} aria-label="Move left" className="bg-surface text-stone-600 hover:text-brand-600 rounded-full p-1 shadow border border-stone-200">
-          <ChevronLeft size={12} />
-        </button>
-        <button onClick={onMoveRight} aria-label="Move right" className="bg-surface text-stone-600 hover:text-brand-600 rounded-full p-1 shadow border border-stone-200">
-          <ChevronRight size={12} />
-        </button>
-        <button onClick={onRemove} aria-label="Remove decoration" className="bg-surface text-status-dnf rounded-full p-1 shadow border border-stone-200">
-          <X size={12} />
-        </button>
-      </div>
+      <button
+        onClick={onRemove}
+        aria-label="Remove decoration"
+        className="absolute -top-2 -right-1 z-10 bg-surface text-status-dnf rounded-full p-0.5 shadow border border-stone-200 opacity-0 group-hover/gadget:opacity-100 transition-opacity"
+      >
+        <X size={13} />
+      </button>
     </div>
   );
 }
 
 /**
- * A real multi-shelf bookcase: books (and any decor gadgets) flow left-to-right
- * and wrap onto a new shelf below instead of scrolling. Decor gadgets carry a
- * `position` (how many books precede them) and can be nudged along the shelves.
+ * A real multi-shelf bookcase: books (and decor gadgets) flow left-to-right and
+ * wrap onto a new shelf below. Gadgets can be dragged and dropped between books;
+ * their shelf position is stored as "how many books precede them".
  */
-export default function Bookcase({ books, decor = [], onSelect, onPersistCover, onMoveGadget, onRemoveGadget }) {
+export default function Bookcase({ books, decor = [], onSelect, onPersistCover, onPlaceGadget, onRemoveGadget }) {
   const ref = useRef(null);
   const [perRow, setPerRow] = useState(8);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [overPos, setOverPos] = useState(null);
 
   useEffect(() => {
     const el = ref.current;
@@ -56,7 +63,7 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
     return () => ro.disconnect();
   }, []);
 
-  // Interleave books + gadgets by gadget position.
+  // Interleave books + gadgets, tracking how many books precede each slot.
   const seq = [];
   const gAt = {};
   decor.forEach((g, i) => {
@@ -64,30 +71,61 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
     (gAt[p] = gAt[p] || []).push({ g, i });
   });
   for (let bi = 0; bi <= books.length; bi++) {
-    (gAt[bi] || []).forEach(({ g, i }) => seq.push({ kind: 'gadget', g, idx: i }));
-    if (bi < books.length) seq.push({ kind: 'book', book: books[bi] });
+    (gAt[bi] || []).forEach(({ g, i }) => seq.push({ kind: 'gadget', g, idx: i, booksBefore: bi }));
+    if (bi < books.length) seq.push({ kind: 'book', book: books[bi], booksBefore: bi });
   }
 
   const rows = [];
   for (let i = 0; i < seq.length; i += perRow) rows.push(seq.slice(i, i + perRow));
+
+  const onOver = (pos) => (e) => {
+    if (dragIdx == null) return;
+    e.preventDefault();
+    setOverPos(pos);
+  };
+  const onDropAt = (pos) => (e) => {
+    e.preventDefault();
+    if (dragIdx != null) onPlaceGadget(dragIdx, pos);
+    setDragIdx(null);
+    setOverPos(null);
+  };
 
   return (
     <div ref={ref}>
       {rows.map((row, ri) => (
         <div key={ri} className="relative mb-16 md:mb-24">
           <div className="flex items-end gap-3 px-3 min-h-[248px]">
-            {row.map((it) =>
-              it.kind === 'book' ? (
-                <BookSpine key={it.book._id} book={it.book} onSelect={onSelect} onPersistCover={onPersistCover} />
-              ) : (
-                <GadgetSlot
-                  key={`g${it.idx}`}
-                  gadget={it.g}
-                  onMoveLeft={() => onMoveGadget(it.idx, -1)}
-                  onMoveRight={() => onMoveGadget(it.idx, 1)}
-                  onRemove={() => onRemoveGadget(it.idx)}
-                />
-              )
+            {row.map((it) => {
+              const key = it.kind === 'book' ? it.book._id : `g${it.idx}`;
+              const marker = dragIdx != null && overPos === it.booksBefore;
+              return (
+                <div
+                  key={key}
+                  onDragOver={onOver(it.booksBefore)}
+                  onDrop={onDropAt(it.booksBefore)}
+                  className={`flex items-end shrink-0 ${marker ? 'border-l-2 border-brand-500 pl-1 -ml-1' : ''}`}
+                >
+                  {it.kind === 'book' ? (
+                    <BookSpine book={it.book} onSelect={onSelect} onPersistCover={onPersistCover} />
+                  ) : (
+                    <GadgetSlot
+                      gadget={it.g}
+                      dragging={dragIdx === it.idx}
+                      onDragStart={() => setDragIdx(it.idx)}
+                      onDragEnd={() => { setDragIdx(null); setOverPos(null); }}
+                      onRemove={() => onRemoveGadget(it.idx)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            {/* drop-at-the-very-end zone (last shelf only) */}
+            {ri === rows.length - 1 && (
+              <div
+                onDragOver={onOver(books.length)}
+                onDrop={onDropAt(books.length)}
+                className={`self-stretch w-10 ${dragIdx != null && overPos === books.length ? 'border-l-2 border-brand-500' : ''}`}
+              />
             )}
           </div>
           {ri % 2 === 0 ? <ShelfWave1 /> : <ShelfWave2 />}

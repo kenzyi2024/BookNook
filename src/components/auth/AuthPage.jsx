@@ -9,9 +9,9 @@ import { isValidEmail, passwordStrength } from '../../lib/validation';
  * Full signed-out screen: brand hero + a login / register card that talks to
  * our own /api/auth endpoints.
  */
-export default function AuthPage() {
-  const { login, register, googleLogin } = useAuth();
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+export default function AuthPage({ onCancel }) {
+  const { login, register, googleLogin, loginAsGuest } = useAuth();
+  const [mode, setMode] = useState(onCancel ? 'register' : 'login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -153,6 +153,27 @@ export default function AuthPage() {
             <div className="flex-1 h-px bg-stone-200" />
           </div>
           <GoogleSignIn onCredential={handleGoogle} />
+
+          {onCancel ? (
+            <>
+              <p className="text-center text-xs text-stone-400 mt-4">Your guest library will move into your new account.</p>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="w-full mt-2 text-sm font-medium text-stone-500 hover:text-brand-600 py-2 transition-colors"
+              >
+                ← Keep browsing as a guest
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={loginAsGuest}
+              className="w-full mt-3 text-sm font-medium text-stone-600 hover:text-brand-600 border border-stone-200 rounded-full py-2.5 transition-colors"
+            >
+              Continue as guest
+            </button>
+          )}
 
           <p className="text-center text-sm text-stone-500 mt-6">
             {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}

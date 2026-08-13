@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { localBooks } from '../lib/localBooks';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -8,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
  * out automatically if the server reports the session is no longer valid (401).
  */
 export function useApi() {
-  const { token, logout } = useAuth();
+  const { token, logout, guest } = useAuth();
 
   const request = useCallback(
     async (path, options = {}) => {
@@ -42,8 +43,18 @@ export function useApi() {
     [token, logout]
   );
 
-  return useMemo(
-    () => ({
+  return useMemo(() => {
+    // Guest mode: everything is local; AI stays a signed-in perk.
+    if (guest) {
+      return {
+        getBooks: async () => localBooks.all(),
+        createBook: async (book) => localBooks.create(book),
+        updateBook: async (id, updates) => localBooks.update(id, updates),
+        deleteBook: async (id) => { localBooks.remove(id); return null; },
+        generateAI: async () => { throw new Error('Create a free account to use AI features.'); },
+      };
+    }
+    return {
       getBooks: () => request('/api/books'),
       createBook: (book) =>
         request('/api/books', { method: 'POST', body: JSON.stringify(book) }),
@@ -55,7 +66,6 @@ export function useApi() {
         request('/api/ai', { method: 'POST', body: JSON.stringify({ prompt }) }).then(
           (r) => r.text
         ),
-    }),
-    [request]
-  );
+    };
+  }, [request, guest]);
 }

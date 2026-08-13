@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown, Search, MoreHorizontal } from 'lucide-react';
+import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown, Search, MoreHorizontal, Wand2, Trash2 } from 'lucide-react';
 import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
 import { SORT_OPTIONS, sortBooks } from '../../lib/sortBooks';
 import { getGadgetPos, setGadgetPos } from '../../lib/gadgetPos';
@@ -78,7 +78,7 @@ const STATUS_SHELVES = [
   { id: 'dnf', title: 'Set Aside', icon: Library },
 ];
 
-export default function LibraryView({ books, onSelect, onAddBook }) {
+export default function LibraryView({ books, onSelect, onAddBook, onLoadSample, onClearLibrary }) {
   const toast = useToast();
   const api = useApi();
   const { user, updateProfile } = useAuth();
@@ -150,11 +150,13 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
     };
   }, [books, api]);
 
+  const seenTitles = useRef(new Set()); // titles already suggested this session — avoid repeats on refresh
   const getSuggestions = async (type) => {
     setLoadingType(type);
     setSuggestionsType(type);
     setSuggestions([]);
-    const existing = books.map((b) => `"${b.title}"`).join(', ');
+    const avoidList = [...books.map((b) => b.title), ...seenTitles.current];
+    const existing = avoidList.map((t) => `"${t}"`).join(', ');
     const seed = makeSeed();
     const prompt =
       type === 'history'
@@ -162,10 +164,12 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
         : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`;
     try {
       const raw = await api.generateAI(prompt);
-      const parsed = parseSuggestions(raw).filter(
-        (s) => !books.some((b) => b.title.toLowerCase() === s.title.toLowerCase())
-      );
-      setSuggestions(parsed);
+      const owned = (s) => books.some((b) => b.title.toLowerCase() === s.title.toLowerCase());
+      const parsed = parseSuggestions(raw).filter((s) => !owned(s));
+      const fresh = parsed.filter((s) => !seenTitles.current.has(s.title.toLowerCase()));
+      const result = fresh.length ? fresh : parsed; // fall back if the model repeats everything
+      result.forEach((s) => seenTitles.current.add(s.title.toLowerCase()));
+      setSuggestions(result);
     } catch (e) {
       console.error('Suggestion failed', e);
       toast.error(e.message || "Couldn't fetch suggestions. Try again.");
@@ -207,7 +211,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
           suggestions={suggestions}
           loading={loadingType === type}
           onRefresh={() => getSuggestions(type)}
-          onClose={() => { setSuggestions([]); setSuggestionsType(null); }}
+          onClose={() => { setSuggestions([]); setSuggestionsType(null); seenTitles.current.clear(); }}
           onAdd={addSuggestion}
         />
       )}
@@ -231,7 +235,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
       <div className="mt-8 mb-20 animate-in fade-in duration-500">
         <div className="relative z-40 flex justify-end mb-4">{ToggleBtn}</div>
         {shelves.length === 0 ? (
-          <EmptyLibrary suggestBlock={suggestBlock} />
+          <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={onLoadSample} />
         ) : (
           <div className="space-y-28">
             {shelves.map((s, i) => (
@@ -341,6 +345,22 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
                 >
                   <Sprout size={16} /> Decorate shelf
                 </button>
+                {onLoadSample && (
+                  <button
+                    onClick={() => { setMenuOpen(false); onLoadSample(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+                  >
+                    <Wand2 size={16} /> Load sample library
+                  </button>
+                )}
+                {onClearLibrary && (
+                  <button
+                    onClick={() => { setMenuOpen(false); onClearLibrary(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-status-dnf hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={16} /> Clear library
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -377,7 +397,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
               suggestions={suggestions}
               loading={false}
               onRefresh={() => getSuggestions('history')}
-              onClose={() => { setSuggestions([]); setSuggestionsType(null); }}
+              onClose={() => { setSuggestions([]); setSuggestionsType(null); seenTitles.current.clear(); }}
               onAdd={addSuggestion}
             />
           )}
@@ -385,7 +405,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
       )}
 
       {books.length === 0 ? (
-        <EmptyLibrary suggestBlock={suggestBlock} inline />
+        <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={onLoadSample} inline />
       ) : searched.length === 0 ? (
         <div className="text-stone-400 italic py-10">
           {query ? `No books match “${query}”.` : 'No books in this filter — try another tab.'}
@@ -411,11 +431,19 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   );
 }
 
-function EmptyLibrary({ suggestBlock, inline }) {
+function EmptyLibrary({ suggestBlock, inline, onLoadSample }) {
   return (
     <div className={`flex flex-col ${inline ? 'items-start' : 'items-center'} gap-3 ${inline ? '' : 'py-16 text-center'}`}>
-      <p className="text-stone-500">Your shelves are empty — add a book or get a recommendation.</p>
+      <p className="text-stone-500">Your shelves are empty — add a book, load a sample library, or get a recommendation.</p>
       <div className="flex flex-wrap gap-2">
+        {onLoadSample && (
+          <button
+            onClick={onLoadSample}
+            className="flex items-center gap-2 text-sm font-semibold bg-brand-500 text-white px-4 py-2 rounded-full hover:bg-brand-600 transition-colors shadow-sm"
+          >
+            <Wand2 size={16} /> Load sample library
+          </button>
+        )}
         {suggestBlock('popular')}
         {suggestBlock('history')}
       </div>

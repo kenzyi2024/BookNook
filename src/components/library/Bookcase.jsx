@@ -8,18 +8,26 @@ import { frameClass } from '../../lib/gadgets';
 // Approximate max slot width used to estimate how many items fit per shelf.
 const SLOT = 82;
 
-function GadgetSlot({ gadget, dragging, onDragStart, onDragEnd, onRemove }) {
+function GadgetSlot({ gadget, dragging, onDragStart, onDragEnd, onRemove, onNudge }) {
   return (
     <div
       draggable
+      tabIndex={0}
+      role="button"
+      aria-label="Shelf decoration — drag, or press the left/right arrow keys to move it"
+      title="Drag, or use ← → to move"
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', 'gadget');
         onDragStart();
       }}
       onDragEnd={onDragEnd}
-      title="Drag to move"
-      className={`relative group/gadget shrink-0 w-20 flex items-end justify-center self-end pb-1 cursor-grab active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); onNudge(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); onNudge(1); }
+        else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onRemove(); }
+      }}
+      className={`relative group/gadget shrink-0 w-20 flex items-end justify-center self-end pb-1 cursor-grab active:cursor-grabbing rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 ${dragging ? 'opacity-40' : ''}`}
     >
       {gadget.type === 'photo' ? (
         <div className={`${frameClass(gadget.frame)} pointer-events-none`} title={gadget.caption || ''}>
@@ -114,6 +122,7 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
                       onDragStart={() => setDragIdx(it.idx)}
                       onDragEnd={() => { setDragIdx(null); setOverPos(null); }}
                       onRemove={() => onRemoveGadget(it.idx)}
+                      onNudge={(dir) => onPlaceGadget(it.idx, it.booksBefore + dir)}
                     />
                   )}
                 </div>

@@ -113,15 +113,17 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout }) {
                 >
                   <Settings size={16} /> Account & appearance
                 </button>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setShowChangePassword(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
-                >
-                  <KeyRound size={16} /> Change password
-                </button>
+                {!user?.isGuest && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowChangePassword(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+                  >
+                    <KeyRound size={16} /> Change password
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setMenuOpen(false);

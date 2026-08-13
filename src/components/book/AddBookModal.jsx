@@ -53,7 +53,7 @@ export default function AddBookModal({ onClose, onAdd }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !author || !totalPages) return;
+    if (!title || !author) return;
     setSubmitting(true);
     const success = await onAdd({
       title,
@@ -181,19 +181,18 @@ export default function AddBookModal({ onClose, onAdd }) {
                 <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1">Author</label>
                 <input required type="text" value={author} onChange={(e) => setAuthor(e.target.value)} className="w-full bg-stone-100 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-400" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1">Genre</label>
-                  <select required value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full bg-stone-100 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-400">
-                    {GENRE_OPTIONS.map((g) => (
-                      <option key={g} value={g}>{g}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1">Total Pages</label>
-                  <input required type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} className="w-full bg-stone-100 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-400" />
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1">
+                  Total Pages <span className="text-stone-400 normal-case font-normal">(optional)</span>
+                </label>
+                <input
+                  type="number"
+                  value={totalPages}
+                  onChange={(e) => setTotalPages(e.target.value)}
+                  placeholder="e.g. 320"
+                  className="w-full bg-stone-100 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-400"
+                />
+                {/* Genre is auto-detected and refined by AI — no need to pick it here. */}
               </div>
 
               <div>

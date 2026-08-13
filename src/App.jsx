@@ -10,9 +10,11 @@ import { useApi } from './hooks/useApi';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useToast } from './components/ui/ToastProvider';
+import { buildMockBooks } from './lib/mockLibrary';
+import { localBooks } from './lib/localBooks';
 
 export default function App() {
-  const { isAuthenticated, loading, user, logout } = useAuth();
+  const { isAuthenticated, loading, user, logout, guest, converting, startAccountSave, cancelAccountSave } = useAuth();
   const { setTheme } = useTheme();
   const api = useApi();
   const toast = useToast();
@@ -84,6 +86,31 @@ export default function App() {
     }
   };
 
+  const reloadBooks = useCallback(async () => {
+    try {
+      setBooks(await api.getBooks());
+    } catch {
+      /* ignore */
+    }
+  }, [api]);
+
+  const loadSample = async () => {
+    try {
+      for (const b of buildMockBooks()) await api.createBook(b);
+      if (guest) setBooks(localBooks.all());
+      else await reloadBooks();
+      toast.success('Sample library loaded!');
+    } catch {
+      toast.error('Could not load the sample library.');
+    }
+  };
+
+  const clearLibrary = () => {
+    localBooks.clear();
+    setBooks([]);
+    toast.success('Library cleared.');
+  };
+
   // --- Gate on auth ---
   if (loading) {
     return (
@@ -94,6 +121,10 @@ export default function App() {
     );
   }
 
+  if (converting) {
+    return <AuthPage onCancel={cancelAccountSave} />;
+  }
+
   if (!isAuthenticated) {
     return <AuthPage />;
   }
@@ -101,6 +132,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-paper text-ink font-sans selection:bg-brand-200">
       <Navbar activeTab={activeTab} onTab={goTo} onAdd={() => setShowAddModal(true)} user={user} onLogout={logout} />
+
+      {guest && (
+        <div className="bg-brand-50 border-b border-brand-100 text-sm text-brand-800 px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+          <span>You’re browsing as a guest — your library is saved on this device.</span>
+          <button onClick={startAccountSave} className="font-semibold text-brand-700 hover:underline">
+            Create a free account to save it
+          </button>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6 pb-24">
         {selectedBook ? (
@@ -111,7 +151,13 @@ export default function App() {
             onDelete={handleDeleteBook}
           />
         ) : activeTab === 'library' ? (
-          <LibraryView books={books} onSelect={setSelectedBook} onAddBook={handleAddBook} />
+          <LibraryView
+            books={books}
+            onSelect={setSelectedBook}
+            onAddBook={handleAddBook}
+            onLoadSample={loadSample}
+            onClearLibrary={guest ? clearLibrary : undefined}
+          />
         ) : (
           <MetricsView books={books} />
         )}

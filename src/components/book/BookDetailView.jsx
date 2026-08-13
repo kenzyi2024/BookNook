@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, XCircle, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2 } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
@@ -24,6 +24,13 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   const [refreshing, setRefreshing] = useState(false);
   const hasAttemptedFetch = useRef(false);
   const toast = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
 
   // TEMPORARY: force-repair a wrong stored cover. Remove with the button below.
   const refreshCoverNow = async () => {
@@ -84,18 +91,38 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
         <button onClick={onBack} className="flex items-center gap-2 text-stone-500 hover:text-brand-600 transition-colors font-medium text-sm">
           <ArrowLeft size={16} /> Back to Library
         </button>
-        <button
-          onClick={() => setConfirmOpen(true)}
-          className="flex items-center gap-2 text-status-dnf hover:brightness-90 transition-all font-semibold text-sm px-3 py-1.5 rounded-full hover:bg-red-50"
-        >
-          <XCircle size={16} /> Delete Book
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="More options"
+            aria-expanded={menuOpen}
+            className="p-2 rounded-full text-stone-400 hover:text-brand-600 hover:bg-stone-100 transition-colors"
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-surface border border-stone-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
+              <button
+                onClick={() => { setMenuOpen(false); refreshCoverNow(); }}
+                disabled={refreshing}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} /> Refresh cover
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-status-dnf hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={16} /> Delete book
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 mb-8 bg-surface p-6 rounded-3xl shadow-sm border border-stone-100">
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
         <div
-          className={`w-48 h-72 rounded-md shadow-2xl flex items-center justify-center p-4 relative overflow-hidden ${coverUrl ? '' : book.coverColor}`}
+          className={`w-48 h-72 rounded-md shadow-2xl flex-shrink-0 flex items-center justify-center p-4 relative overflow-hidden ${coverUrl ? '' : book.coverColor}`}
           style={!coverUrl && book.spineColor ? { backgroundColor: book.spineColor } : undefined}
         >
           {coverUrl ? (
@@ -121,15 +148,6 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
               </h2>
             </>
           )}
-        </div>
-          {/* TEMPORARY cover-repair — remove this button (and refreshCover) later */}
-          <button
-            onClick={refreshCoverNow}
-            disabled={refreshing}
-            className="text-xs text-stone-500 hover:text-brand-600 flex items-center gap-1.5 disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} /> Refresh cover
-          </button>
         </div>
 
         <div className="flex-1 flex flex-col justify-center">

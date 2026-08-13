@@ -250,6 +250,23 @@ export default function MetricsView({ books }) {
   }));
   const hoursRead = Math.round(totalMinutes / 60);
 
+  const wantCount = books.filter((b) => b.status === 'want_to_read').length;
+
+  // Current reading streak: consecutive days with a logged session, ending today
+  // (or yesterday, so a missed "today" doesn't instantly zero it out).
+  const sessionDays = new Set();
+  books.forEach((b) => (b.sessions || []).forEach((s) => {
+    if (s.date) sessionDays.add(new Date(s.date).toISOString().slice(0, 10));
+  }));
+  const hasDay = (i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    return sessionDays.has(d.toISOString().slice(0, 10));
+  };
+  let streak = 0;
+  const startI = hasDay(0) ? 0 : hasDay(1) ? 1 : -1;
+  if (startI >= 0) for (let i = startI; hasDay(i); i++) streak += 1;
+
   // This calendar year
   const year = new Date().getFullYear();
   const inYear = (d) => d && new Date(d).getFullYear() === year;
@@ -296,6 +313,8 @@ export default function MetricsView({ books }) {
   books.forEach((b) => (b.sessions || []).forEach((s) => { const key = monthKey(s.date); if (key in pagesByMonth) pagesByMonth[key] += s.pagesRead || 0; }));
   const booksMonthData = months.map((m) => ({ label: monthLabel(m), value: finishedByMonth[m] }));
   const pagesMonthData = months.map((m) => ({ label: monthLabel(m), value: pagesByMonth[m] }));
+  const hasFinishMonths = booksMonthData.some((d) => d.value > 0);
+  const hasPagesMonths = pagesMonthData.some((d) => d.value > 0);
 
   // Rating distribution
   const ratingData = [5, 4, 3, 2, 1].map((star) => ({
@@ -322,6 +341,21 @@ export default function MetricsView({ books }) {
     longestBook,
   });
 
+  if (!books.length) {
+    return (
+      <div className="animate-in fade-in duration-500">
+        <div className="mb-2 flex items-center gap-3">
+          <BarChart2 size={34} className="text-brand-600 drop-shadow-sm shrink-0" />
+          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">Your Year in Books</h2>
+        </div>
+        <div className="text-center py-20">
+          <BarChart2 size={40} className="mx-auto mb-3 text-brand-300" />
+          <p className="text-stone-500">Your reading stats will appear here as you add and finish books.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
       <div className="mb-2 flex items-center gap-3">
@@ -331,21 +365,27 @@ export default function MetricsView({ books }) {
         </h2>
       </div>
 
-      {/* Hero band */}
-      <div className="rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-100/70 via-amber-50 to-surface p-6 md:p-8 shadow-sm">
-        <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
-          <HeroStat value={read.length} label="Books Finished" />
+      {/* At a glance — the headline numbers */}
+      <div className="rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-100/70 via-amber-50 to-surface p-6 md:p-7 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-5">
+          <HeroStat value={read.length} label="Finished" />
+          <HeroStat value={reading.length} label="Reading" />
+          <HeroStat value={wantCount} label="Want to Read" />
           <HeroStat value={totalPagesRead.toLocaleString()} label="Pages Read" />
-          {hoursRead > 0 && <HeroStat value={`${hoursRead}h`} label="Time Reading" />}
+          <HeroStat value={avgRating !== '—' ? `${avgRating}★` : '—'} label="Avg Rating" />
+          <HeroStat value={streak} label="Day Streak" />
           <HeroStat value={finishedThisYear} label={`Finished in ${year}`} />
           {projectedYear > 0 && <HeroStat value={`~${projectedYear}`} label={`On Pace for ${year}`} />}
-          <div className="ml-auto flex items-center gap-2 text-sm text-brand-700 bg-surface/70 border border-brand-100 rounded-full px-4 py-2">
-            <Layers size={16} />
-            {read.length > 0
-              ? <span>Stacked up, that&rsquo;s ~<b>{stack}</b> of books</span>
-              : <span>Finish a book to start your stack</span>}
-          </div>
         </div>
+        {read.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-brand-100/70 flex items-center gap-2 text-sm text-brand-700">
+            <Layers size={16} />
+            <span>
+              Stacked up, that&rsquo;s ~<b>{stack}</b> of books
+              {hoursRead > 0 ? <> · <b>{hoursRead}h</b> logged</> : null}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Highlights with covers */}
@@ -417,50 +457,60 @@ export default function MetricsView({ books }) {
         </div>
       </div>
 
-      {/* Genres + Ratings + Authors — a filled 3-up row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card title="Genres Read" icon={<Book size={18} className="text-brand-500" />}>
-          <Pie data={genreData} />
-        </Card>
-        <Card title="How You Rate" icon={<Star size={18} className="text-brand-500" />}>
-          {rated.length ? <HBars data={ratingData} /> : <p className="text-stone-400 italic py-6 text-center">Rate some finished books to see this.</p>}
-        </Card>
-        <Card title="Most-Read Authors" icon={<Users size={18} className="text-brand-500" />}>
-          {topAuthors.length ? (
-            <div className="flex flex-col gap-3">
-              {topAuthors.map(([name, count], i) => {
-                const max = topAuthors[0][1];
-                return (
-                  <div key={name} className="flex items-center gap-3 text-sm">
-                    <span className="w-5 text-stone-400 font-display font-bold tabular-nums">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between mb-1">
-                        <span className="font-medium text-ink truncate">{name}</span>
-                        <span className="text-stone-500 tabular-nums shrink-0 ml-2">{count}</span>
-                      </div>
-                      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-400 rounded-full" style={{ width: `${(count / max) * 100}%` }} />
+      {/* Genres + Ratings + Authors — only cards that have data */}
+      {(counted.length > 0 || rated.length > 0 || topAuthors.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {counted.length > 0 && (
+            <Card title="Genres Read" icon={<Book size={18} className="text-brand-500" />}>
+              <Pie data={genreData} />
+            </Card>
+          )}
+          {rated.length > 0 && (
+            <Card title="How You Rate" icon={<Star size={18} className="text-brand-500" />}>
+              <HBars data={ratingData} />
+            </Card>
+          )}
+          {topAuthors.length > 0 && (
+            <Card title="Most-Read Authors" icon={<Users size={18} className="text-brand-500" />}>
+              <div className="flex flex-col gap-3">
+                {topAuthors.map(([name, count], i) => {
+                  const max = topAuthors[0][1];
+                  return (
+                    <div key={name} className="flex items-center gap-3 text-sm">
+                      <span className="w-5 text-stone-400 font-display font-bold tabular-nums">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-ink truncate">{name}</span>
+                          <span className="text-stone-500 tabular-nums shrink-0 ml-2">{count}</span>
+                        </div>
+                        <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-brand-400 rounded-full" style={{ width: `${(count / max) * 100}%` }} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-stone-400 italic py-6 text-center">Add a few books to see your favorites.</p>
+                  );
+                })}
+              </div>
+            </Card>
           )}
-        </Card>
-      </div>
+        </div>
+      )}
 
-      {/* Per-month trends */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card title="Books Finished / Month" icon={<CheckCircle size={18} className="text-brand-500" />}>
-          <Bars data={booksMonthData} />
-        </Card>
-        <Card title="Pages Read / Month" icon={<BookOpen size={18} className="text-brand-500" />}>
-          <Bars data={pagesMonthData} color="var(--color-status-read)" />
-        </Card>
-      </div>
+      {/* Per-month trends — hidden until there's something to plot */}
+      {(hasFinishMonths || hasPagesMonths) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {hasFinishMonths && (
+            <Card title="Books Finished / Month" icon={<CheckCircle size={18} className="text-brand-500" />}>
+              <Bars data={booksMonthData} />
+            </Card>
+          )}
+          {hasPagesMonths && (
+            <Card title="Pages Read / Month" icon={<BookOpen size={18} className="text-brand-500" />}>
+              <Bars data={pagesMonthData} color="var(--color-status-read)" />
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

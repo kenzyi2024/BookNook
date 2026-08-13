@@ -8,6 +8,7 @@ import NotesJournal from './NotesJournal';
 import ShareCard from './ShareCard';
 import { STATUS_OPTIONS } from '../../lib/status';
 import { resolveCover, refreshCover } from '../../lib/covers';
+import { useToast } from '../ui/ToastProvider';
 
 /**
  * Full-page view for one book: cover, metadata, status/rating controls, and the
@@ -22,6 +23,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const hasAttemptedFetch = useRef(false);
+  const toast = useToast();
 
   // TEMPORARY: force-repair a wrong stored cover. Remove with the button below.
   const refreshCoverNow = async () => {
@@ -32,7 +34,12 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
       if (r.coverUrl) {
         setCoverUrl(r.coverUrl);
         onUpdate({ coverUrl: r.coverUrl, spineColor: r.spineColor });
+        toast.success('Cover updated.');
+      } else {
+        toast.error('No cover found for this title.');
       }
+    } catch {
+      toast.error("Couldn't refresh the cover.");
     } finally {
       setRefreshing(false);
     }
@@ -102,6 +109,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
                 src={coverUrl}
                 alt={`Cover of ${book.title}`}
                 onLoad={() => setImgLoaded(true)}
+                onError={() => { setCoverUrl(''); setImgLoaded(false); }}
                 className={`absolute inset-0 w-full h-full object-cover z-20 transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
               />
             </>

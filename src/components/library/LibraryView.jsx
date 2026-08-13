@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown } from 'lucide-react';
 import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
 import { SORT_OPTIONS, sortBooks } from '../../lib/sortBooks';
+import { getGadgetPos, setGadgetPos } from '../../lib/gadgetPos';
 import Shelf from './Shelf';
 import Bookcase from './Bookcase';
 import SuggestionsPanel from './SuggestionsPanel';
@@ -88,17 +89,24 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
   const [suggestionsType, setSuggestionsType] = useState(null);
   const [showGadget, setShowGadget] = useState(false);
   const [sort, setSort] = useState('added_desc');
+  const [posBump, setPosBump] = useState(0);
 
   const decor = user?.shelfDecor || [];
   const addGadget = (g) => updateProfile({ shelfDecor: [...decor, { ...g, position: books.length }] });
   const removeGadget = (idx) => updateProfile({ shelfDecor: decor.filter((_, i) => i !== idx) });
+  // Positions resolve from the client store first (instant), then DB, then end.
+  const decorPositioned = decor.map((g) => ({
+    ...g,
+    position: getGadgetPos(g._id) ?? g.position ?? books.length,
+  }));
   const moveGadget = (idx, dir) => {
-    const next = decor.map((g, i) => {
-      if (i !== idx) return g;
-      const cur = g.position ?? books.length;
-      return { ...g, position: Math.max(0, Math.min(books.length, cur + dir)) };
-    });
-    updateProfile({ shelfDecor: next });
+    const g = decor[idx];
+    const cur = getGadgetPos(g._id) ?? g.position ?? books.length;
+    const pos = Math.max(0, Math.min(books.length, cur + dir));
+    setGadgetPos(g._id, pos);
+    setPosBump((b) => b + 1); // instant re-render
+    // best-effort DB sync (persists once the backend has the position field)
+    updateProfile({ shelfDecor: decor.map((d, i) => (i === idx ? { ...d, position: pos } : d)) }).catch(() => {});
   };
 
   const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
@@ -237,9 +245,10 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
 
   // --- Unified view: one shelf + filter chips ---
   return (
-    <div className="mt-8 mb-20 animate-in fade-in duration-500">
-      <div className="relative z-40 flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex flex-wrap gap-2">
+    <div className="mt-8 mb-20 animate-in fade-in duration-500" data-pos={posBump}>
+      <div className="mb-5 space-y-3">
+        {/* Row 1 — status filters */}
+        <div className="relative z-40 flex flex-wrap gap-2">
           {FILTERS.map((f) => {
             const count = f.id === 'all' ? books.length : books.filter((b) => b.status === f.id).length;
             return (
@@ -255,7 +264,9 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
             );
           })}
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        {/* Row 2 — sort + actions */}
+        <div className="relative z-40 flex flex-wrap items-center gap-2">
           <div className="relative">
             <ArrowUpDown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
             <select
@@ -282,7 +293,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
           >
             <Sprout size={15} /> Add gadget
           </button>
-          {ToggleBtn}
+          <div className="ml-auto">{ToggleBtn}</div>
         </div>
       </div>
 
@@ -321,7 +332,7 @@ export default function LibraryView({ books, onSelect, onAddBook }) {
       ) : (
         <Bookcase
           books={sorted}
-          decor={filter === 'all' ? decor : []}
+          decor={filter === 'all' ? decorPositioned : []}
           onSelect={onSelect}
           onPersistCover={persistCover}
           onMoveGadget={moveGadget}

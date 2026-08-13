@@ -47,13 +47,17 @@ async function lookupGoogleCover(title, author) {
   try {
     const q = `intitle:${title}${author ? ` inauthor:${author}` : ''}`;
     const res = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?maxResults=1&printType=books&q=${encodeURIComponent(q)}`
+      `https://www.googleapis.com/books/v1/volumes?maxResults=6&printType=books&q=${encodeURIComponent(q)}`
     );
     if (!res.ok) return '';
     const data = await res.json();
-    const links = data.items?.[0]?.volumeInfo?.imageLinks;
-    const raw = links?.thumbnail || links?.smallThumbnail || '';
-    return raw ? raw.replace(/^http:/, 'https:').replace('&edge=curl', '') : '';
+    // First result sometimes has no thumbnail — scan a few for a usable one.
+    for (const item of data.items || []) {
+      const links = item.volumeInfo?.imageLinks;
+      const raw = links?.thumbnail || links?.smallThumbnail;
+      if (raw) return raw.replace(/^http:/, 'https:').replace('&edge=curl', '');
+    }
+    return '';
   } catch {
     return '';
   }

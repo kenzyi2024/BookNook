@@ -199,6 +199,20 @@ export function answerReflection(book, text) {
   };
 }
 
+/**
+ * Append a follow-up thought to an existing answer (by its index in
+ * book.reflection.answers). Nothing is ever overwritten or removed — later
+ * thoughts simply stack under the original, so a reflection can keep growing.
+ */
+export function addFollowUp(book, index, text) {
+  const answers = (book.reflection?.answers || []).map((a, i) =>
+    i === index
+      ? { ...a, followUps: [...(a.followUps || []), { text: text.trim(), date: new Date().toISOString() }] }
+      : a
+  );
+  return { ...(book.reflection || { stage: 0 }), answers };
+}
+
 /** Skip (snooze) a reflection to the next interval without recording an answer. */
 export function snoozeReflection(book) {
   const stage = stageOf(book);

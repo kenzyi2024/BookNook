@@ -270,7 +270,7 @@ export default function App() {
         ) : activeTab === 'discover' ? (
           <DiscoverView books={books} onAdd={handleAddBook} />
         ) : activeTab === 'quotes' ? (
-          <CommonplaceBook books={books} onSelect={setSelectedBook} />
+          <CommonplaceBook books={books} onSelect={setSelectedBook} onUpdateBook={handleUpdateBook} />
         ) : (
           <MetricsView books={books} />
         )}

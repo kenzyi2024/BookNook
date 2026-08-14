@@ -267,7 +267,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
       <div className="bg-surface p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100 min-h-[400px]">
         {activeSubTab === 'progress' && <SessionLogger book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'notes' && <NotesJournal book={book} onUpdate={onUpdate} />}
-        {activeSubTab === 'reflections' && <ReflectionsHistory book={book} onReflect={onReflect} />}
+        {activeSubTab === 'reflections' && <ReflectionsHistory book={book} onUpdate={onUpdate} onReflect={onReflect} />}
         {activeSubTab === 'ai' && <AIToolsView book={book} onUpdate={onUpdate} />}
       </div>
 

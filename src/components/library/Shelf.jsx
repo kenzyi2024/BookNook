@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import BookSpine from './BookSpine';
+import FairyLights from './FairyLights';
 
 /**
  * A horizontal, scrollable shelf of book spines with a title, optional header
@@ -47,17 +48,20 @@ export default function Shelf({ icon, title, action, books, onSelect, emptyState
         </>
       )}
 
-      <div
-        ref={rowRef}
-        className={`flex items-end gap-2 px-20 z-30 relative overflow-x-auto flex-nowrap scroll-smooth no-scrollbar ${
-          hasBooks || hasExtras ? 'pt-32 -mt-32 min-h-[280px]' : 'min-h-[240px]'
-        }`}
-      >
-        {hasBooks && books.map((book) => <BookSpine key={book._id} book={book} onSelect={onSelect} onPersistCover={onPersistCover} />)}
-        {hasExtras && extras}
-        {!hasBooks && !hasExtras && (
-          <div className="flex flex-col items-start gap-3 mb-8 w-full max-w-md">{emptyState}</div>
-        )}
+      <div className="relative">
+        {(hasBooks || hasExtras) && <FairyLights />}
+        <div
+          ref={rowRef}
+          className={`flex items-end gap-2 px-20 z-30 relative overflow-x-auto flex-nowrap scroll-smooth no-scrollbar ${
+            hasBooks || hasExtras ? 'pt-32 -mt-32 min-h-[280px]' : 'min-h-[240px]'
+          }`}
+        >
+          {hasBooks && books.map((book) => <BookSpine key={book._id} book={book} onSelect={onSelect} onPersistCover={onPersistCover} />)}
+          {hasExtras && extras}
+          {!hasBooks && !hasExtras && (
+            <div className="flex flex-col items-start gap-3 mb-8 w-full max-w-md">{emptyState}</div>
+          )}
+        </div>
       </div>
       {wave}
     </div>

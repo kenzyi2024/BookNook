@@ -10,14 +10,28 @@ const STATUS_DOT = {
   dnf: '#c98a8a',
 };
 
+// Six theme-derived spine shades (see --spine-* in themes.js). Every book gets a
+// stable one so the shelf reads as shades of the chosen color — cohesive, and it
+// re-skins instantly when the theme or dark mode changes.
+const SPINE_SHADES = [
+  'var(--spine-1)', 'var(--spine-2)', 'var(--spine-3)',
+  'var(--spine-4)', 'var(--spine-5)', 'var(--spine-6)',
+];
+function spineShade(book) {
+  const s = `${book.title}|${book.author}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return SPINE_SHADES[h % SPINE_SHADES.length];
+}
+
 /**
  * A book rendered as a clean, characterful spine: just the title runs down the
  * spine, framed by raised head/tail bands and a thin foil line, with a small
- * status dot and a progress sliver. The spine is tinted by the cover's dominant
- * color (fetched from Open Library, cached) and the real cover appears in the
- * hover card. Falls back to the book's `coverColor` when no cover is found.
+ * status dot and a progress sliver. The spine is tinted with a shade of the
+ * active theme color (cohesive shelf); the real cover appears in the hover card.
  */
 export default function BookSpine({ book, onSelect, onPersistCover }) {
+  const shade = spineShade(book);
   const height = Math.max(150, Math.min(230, 120 + book.totalPages * 0.14));
   const width = Math.max(46, Math.min(66, 40 + book.totalPages * 0.045));
   const progress = Math.min(100, Math.round((book.currentPage / book.totalPages) * 100) || 0);
@@ -49,8 +63,6 @@ export default function BookSpine({ book, onSelect, onPersistCover }) {
     };
   }, [book._id, book.title, book.author, book.coverUrl, book.spineColor, onPersistCover]);
 
-  const tinted = Boolean(cover.spineColor);
-
   // The hover card is rendered in a portal so it can't be clipped by the shelf's
   // scroll container or trapped beneath the control bar's stacking context.
   const btnRef = useRef(null);
@@ -70,12 +82,12 @@ export default function BookSpine({ book, onSelect, onPersistCover }) {
       onFocus={showTip}
       onBlur={hideTip}
       aria-label={`Open ${book.title}`}
-      className={`${tinted ? '' : book.coverColor} rounded-sm shadow-[2px_0_6px_rgba(0,0,0,0.35)] cursor-pointer hover:-translate-y-3 transition-transform duration-300 relative flex flex-col items-center`}
+      className="rounded-sm shadow-[2px_0_6px_rgba(0,0,0,0.35)] cursor-pointer hover:-translate-y-3 transition-transform duration-300 relative flex flex-col items-center"
       style={{
         width: `${width}px`,
         height: `${height}px`,
         flexShrink: 0,
-        ...(tinted ? { backgroundColor: cover.spineColor } : null),
+        backgroundColor: shade,
       }}
     >
       {/* edge highlights for a rounded, printed look */}
@@ -132,8 +144,8 @@ export default function BookSpine({ book, onSelect, onPersistCover }) {
                 />
               ) : (
                 <div
-                  className={`w-12 h-[72px] rounded shadow shrink-0 ${tinted ? '' : book.coverColor}`}
-                  style={tinted ? { backgroundColor: cover.spineColor } : undefined}
+                  className="w-12 h-[72px] rounded shadow shrink-0"
+                  style={{ backgroundColor: shade }}
                 />
               )}
               <div className="min-w-0 flex-1">

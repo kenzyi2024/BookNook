@@ -68,35 +68,87 @@ export const THEMES = {
 
 export const DEFAULT_THEME = 'terracotta';
 
+// --- tiny color helpers so dark mode + spines can be derived from the ramp ---
+function hexToRgb(h) {
+  h = h.replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex(rgb) {
+  return '#' + rgb.map((x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+}
+/** Linear blend of two hex colors. t=0 → a, t=1 → b. */
+function mix(a, b, t) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  return rgbToHex([0, 1, 2].map((i) => A[i] + (B[i] - A[i]) * t));
+}
+
 /**
- * Dark mode is a TOGGLE, not a palette. These overrides layer on top of whatever
- * light theme is selected to produce the candlelit reading-nook look: warm
- * brown-black surfaces, parchment ink, an amber glow, and a tuned stone ramp.
+ * Dark mode is a TOGGLE, not a separate palette — but instead of a fixed amber
+ * wash it's now a DARK VERSION OF THE CHOSEN THEME. Surfaces become a near-black
+ * tinted with the theme's deepest hue, tint-backgrounds go dark, and the mid
+ * tones stay the chosen color (brightened a touch) so buttons + accents read as
+ * "the theme, at night" rather than black/yellow.
  */
-export const DARK_VARS = {
-  // Surfaces + primary text
-  '--color-paper': '#17110B', '--color-surface': '#221913', '--color-ink': '#F1E7D4',
+export function darkVarsFor(theme) {
+  const v = theme.vars || THEMES[DEFAULT_THEME].vars;
+  const b = (n) => v[`--color-brand-${n}`];
+  const INK = '#0A0705'; // warm near-black we blend toward
+  const deep = b(900);
+  return {
+    // Surfaces + primary text — dark, hue-tinted, not pure black
+    '--color-paper': mix(deep, INK, 0.74),
+    '--color-surface': mix(deep, INK, 0.58),
+    '--color-ink': mix(b(50), '#FFFFFF', 0.5),
 
-  // Brand ramp inverted for dark: tint-backgrounds (50/100) go deep, the
-  // mid/high tones glow amber for text + buttons.
-  '--color-brand-50': '#2A1D10', '--color-brand-100': '#3A2915', '--color-brand-200': '#5A3E1E',
-  '--color-brand-300': '#8A5E2A', '--color-brand-400': '#C0883A', '--color-brand-500': '#E39A3B',
-  '--color-brand-600': '#EBA94E', '--color-brand-700': '#F2BE72', '--color-brand-800': '#F7D49B',
-  '--color-brand-900': '#FBE6C4',
+    // Brand ramp: tint-backgrounds (50–200) go deep; 300–500 stay the chosen
+    // color for buttons/accents; 600–900 become light tints for text.
+    '--color-brand-50': mix(deep, INK, 0.52),
+    '--color-brand-100': mix(deep, INK, 0.4),
+    '--color-brand-200': mix(b(800), INK, 0.25),
+    '--color-brand-300': b(600),
+    '--color-brand-400': b(500),
+    '--color-brand-500': b(400),
+    '--color-brand-600': b(300),
+    '--color-brand-700': mix(b(200), '#FFFFFF', 0.12),
+    '--color-brand-800': mix(b(100), '#FFFFFF', 0.25),
+    '--color-brand-900': mix(b(50), '#FFFFFF', 0.4),
 
-  // Neutral (stone) ramp: 50–300 become warm dark surfaces/borders, 400–800
-  // become warm light text. 900 is left default so bg-stone-900 overlays stay dark.
-  '--color-stone-50': '#221913', '--color-stone-100': '#2A2018', '--color-stone-200': '#392B20',
-  '--color-stone-300': '#48372A', '--color-stone-400': '#9A8B78', '--color-stone-500': '#B7A992',
-  '--color-stone-600': '#CFC3AD', '--color-stone-700': '#E4D9C5', '--color-stone-800': '#EFE6D4',
+    // Stone ramp: 50–300 warm dark surfaces/borders (hue-tinted), 400–800 warm
+    // light text.
+    '--color-stone-50': mix(deep, INK, 0.58),
+    '--color-stone-100': mix(deep, INK, 0.48),
+    '--color-stone-200': mix(b(800), INK, 0.32),
+    '--color-stone-300': mix(b(700), INK, 0.15),
+    '--color-stone-400': mix(b(300), '#FFFFFF', 0.15),
+    '--color-stone-500': mix(b(200), '#FFFFFF', 0.28),
+    '--color-stone-600': mix(b(100), '#FFFFFF', 0.4),
+    '--color-stone-700': mix(b(50), '#FFFFFF', 0.55),
+    '--color-stone-800': mix(b(50), '#FFFFFF', 0.75),
 
-  // Warm amber wash for the light gradient stops used on the hero/insight bands.
-  '--color-amber-50': '#241A12', '--color-amber-100': '#33251A',
+    // Warm wash for the hero/insight gradient stops.
+    '--color-amber-50': mix(deep, INK, 0.5),
+    '--color-amber-100': mix(deep, INK, 0.36),
 
-  // Status accents, brightened for legibility on dark surfaces.
-  '--color-status-reading': '#E0912F', '--color-status-read': '#46A578',
-  '--color-status-want': '#6C9BD2', '--color-status-dnf': '#D66A6A',
-};
+    // Status accents, brightened for legibility on dark surfaces.
+    '--color-status-reading': '#E0912F', '--color-status-read': '#46A578',
+    '--color-status-want': '#6C9BD2', '--color-status-dnf': '#D66A6A',
+  };
+}
+
+/**
+ * Spine shades — six dark/saturated tones drawn from the chosen theme's LIGHT
+ * ramp. Kept constant across light + dark so every book on the shelf is a shade
+ * of the theme color (cohesive) and white spine text stays legible in both modes.
+ */
+function spineVarsFor(theme) {
+  const v = theme.vars || THEMES[DEFAULT_THEME].vars;
+  const order = [400, 500, 600, 700, 800, 300];
+  const out = {};
+  order.forEach((n, i) => { out[`--spine-${i + 1}`] = v[`--color-brand-${n}`]; });
+  return out;
+}
 
 // Tracks the custom properties set last time so we can clear them on change.
 let appliedKeys = [];
@@ -105,7 +157,11 @@ export function applyTheme(id, dark = false) {
   const theme = THEMES[id] || THEMES[DEFAULT_THEME];
   const root = document.documentElement;
   appliedKeys.forEach((k) => root.style.removeProperty(k));
-  const vars = { ...(theme.vars || {}), ...(dark ? DARK_VARS : {}) };
+  const vars = {
+    ...(theme.vars || {}),
+    ...spineVarsFor(theme),            // spine palette — same in light + dark
+    ...(dark ? darkVarsFor(theme) : {}),
+  };
   Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
   appliedKeys = Object.keys(vars);
   root.classList.toggle('dark', Boolean(dark));

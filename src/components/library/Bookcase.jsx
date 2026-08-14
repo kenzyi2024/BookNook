@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import BookSpine from './BookSpine';
+import FairyLights from './FairyLights';
 import { ShelfWave1, ShelfWave2 } from './ShelfWaves';
 import { GadgetArt } from '../../lib/gadgetArt';
 import { frameClass } from '../../lib/gadgets';
@@ -102,6 +103,7 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
     <div ref={ref}>
       {rows.map((row, ri) => (
         <div key={ri} className="relative mb-16 md:mb-24">
+          <FairyLights />
           <div className="flex items-end gap-3 px-3 min-h-[248px]">
             {row.map((it) => {
               const key = it.kind === 'book' ? it.book._id : `g${it.idx}`;

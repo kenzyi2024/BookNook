@@ -154,6 +154,21 @@ body {
   50% { filter: brightness(1.4); }
 }
 
+/*
+  Shelving animation — a book settles onto the shelf as it appears (on load, and
+  when a new book is added). `backwards` fill holds it hidden during its stagger
+  delay; the final frame matches the resting state so the hover-lift still works.
+  The global reduced-motion rule collapses this for users who opt out.
+*/
+.bn-shelve {
+  animation: bn-shelve 520ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes bn-shelve {
+  0% { opacity: 0; transform: translateY(-26px) rotate(-4deg); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) rotate(0); }
+}
+
 /* --- Book-flip loader (replaces spinners) --- */
 @keyframes bn-page-flip {
   0%        { transform: rotateY(0deg); }

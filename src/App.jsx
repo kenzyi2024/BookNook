@@ -5,6 +5,7 @@ import AuthPage from './components/auth/AuthPage';
 import LibraryView from './components/library/LibraryView';
 import MetricsView from './components/metrics/MetricsView';
 import DiscoverView from './components/discover/DiscoverView';
+import CommonplaceBook from './components/quotes/CommonplaceBook';
 import BookDetailView from './components/book/BookDetailView';
 import AddBookModal from './components/book/AddBookModal';
 import { useApi } from './hooks/useApi';
@@ -230,6 +231,8 @@ export default function App() {
           />
         ) : activeTab === 'discover' ? (
           <DiscoverView books={books} onAdd={handleAddBook} />
+        ) : activeTab === 'quotes' ? (
+          <CommonplaceBook books={books} onSelect={setSelectedBook} />
         ) : (
           <MetricsView books={books} />
         )}

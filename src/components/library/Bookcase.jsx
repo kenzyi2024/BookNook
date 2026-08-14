@@ -116,7 +116,7 @@ export default function Bookcase({ books, decor = [], onSelect, onPersistCover, 
                   className={`flex items-end shrink-0 ${marker ? 'border-l-2 border-brand-500 pl-1 -ml-1' : ''}`}
                 >
                   {it.kind === 'book' ? (
-                    <BookSpine book={it.book} onSelect={onSelect} onPersistCover={onPersistCover} />
+                    <BookSpine book={it.book} index={it.booksBefore} onSelect={onSelect} onPersistCover={onPersistCover} />
                   ) : (
                     <GadgetSlot
                       gadget={it.g}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Library, BarChart2, LogOut, KeyRound, Settings, Moon, Sun, Compass } from 'lucide-react';
+import { Plus, Library, BarChart2, LogOut, KeyRound, Settings, Moon, Sun, Compass, Quote } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 import ChangePasswordModal from '../auth/ChangePasswordModal';
 import AccountModal from '../auth/AccountModal';
@@ -30,6 +30,7 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout, onTogg
   const tabs = [
     { id: 'library', label: 'Library', icon: <Library size={16} /> },
     { id: 'discover', label: 'Discover', icon: <Compass size={16} /> },
+    { id: 'quotes', label: 'Quotes', icon: <Quote size={16} /> },
     { id: 'metrics', label: 'Metrics', icon: <BarChart2 size={16} /> },
   ];
 

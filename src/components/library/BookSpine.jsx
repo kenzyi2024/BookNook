@@ -30,7 +30,7 @@ function spineShade(book) {
  * status dot and a progress sliver. The spine is tinted with a shade of the
  * active theme color (cohesive shelf); the real cover appears in the hover card.
  */
-export default function BookSpine({ book, onSelect, onPersistCover }) {
+export default function BookSpine({ book, onSelect, onPersistCover, index = 0 }) {
   const shade = spineShade(book);
   const height = Math.max(150, Math.min(230, 120 + book.totalPages * 0.14));
   const width = Math.max(46, Math.min(66, 40 + book.totalPages * 0.045));
@@ -82,12 +82,13 @@ export default function BookSpine({ book, onSelect, onPersistCover }) {
       onFocus={showTip}
       onBlur={hideTip}
       aria-label={`Open ${book.title}`}
-      className="rounded-sm shadow-[2px_0_6px_rgba(0,0,0,0.35)] cursor-pointer hover:-translate-y-3 transition-transform duration-300 relative flex flex-col items-center"
+      className="bn-shelve rounded-sm shadow-[2px_0_6px_rgba(0,0,0,0.35)] cursor-pointer hover:-translate-y-3 transition-transform duration-300 relative flex flex-col items-center"
       style={{
         width: `${width}px`,
         height: `${height}px`,
         flexShrink: 0,
         backgroundColor: shade,
+        animationDelay: `${Math.min(index, 20) * 35}ms`,
       }}
     >
       {/* edge highlights for a rounded, printed look */}

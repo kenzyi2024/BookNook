@@ -56,7 +56,7 @@ export default function Shelf({ icon, title, action, books, onSelect, emptyState
             hasBooks || hasExtras ? 'pt-32 -mt-32 min-h-[280px]' : 'min-h-[240px]'
           }`}
         >
-          {hasBooks && books.map((book) => <BookSpine key={book._id} book={book} onSelect={onSelect} onPersistCover={onPersistCover} />)}
+          {hasBooks && books.map((book, i) => <BookSpine key={book._id} index={i} book={book} onSelect={onSelect} onPersistCover={onPersistCover} />)}
           {hasExtras && extras}
           {!hasBooks && !hasExtras && (
             <div className="flex flex-col items-start gap-3 mb-8 w-full max-w-md">{emptyState}</div>

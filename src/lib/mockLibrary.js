@@ -69,6 +69,24 @@ const RAW = [
 
 const DEMO_KEYS = new Set(RAW.map(([t, a]) => `${t}|${a}`.toLowerCase()));
 
+// A couple of sample mood tags per book (by genre) so the mood feature and
+// mood-aware search have something to show in the demo library.
+const GENRE_MOODS = {
+  Fantasy: ['Adventurous', 'Whimsical'],
+  'Science Fiction': ['Reflective', 'Tense'],
+  Historical: ['Emotional', 'Reflective'],
+  Fiction: ['Emotional', 'Reflective'],
+  'Mystery & Thriller': ['Tense', 'Mysterious'],
+  Horror: ['Dark', 'Tense'],
+  'Biography & Memoir': ['Emotional', 'Inspiring'],
+  'Self-Help': ['Inspiring', 'Hopeful'],
+  History: ['Reflective'],
+};
+const moodsFor = (genre, i) => {
+  const base = GENRE_MOODS[genre] || ['Reflective'];
+  return i % 3 === 0 ? base.slice(0, 1) : base;
+};
+
 // Reading sessions per active book: a recent streak plus sessions scattered
 // across the last ~11 months, so the streak calendar AND the pages/month chart
 // fill in across the whole year.
@@ -99,6 +117,7 @@ export function buildMockBooks() {
       title,
       author,
       genre,
+      moods: moodsFor(genre, i),
       totalPages,
       status,
       demo: true, // ignored by the backend, but present for local/guest data

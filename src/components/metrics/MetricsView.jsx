@@ -1,12 +1,13 @@
 import {
   BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer,
-  Trophy, Ruler, Users, Layers, Library, Sparkles,
+  Trophy, Ruler, Users, Layers, Library, Sparkles, Flame,
 } from 'lucide-react';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
 import { normalizeGenre } from '../../lib/genres';
 import Card from '../ui/Card';
 import StreakCalendar from './StreakCalendar';
+import Achievements from './Achievements';
 
 // Distinct categorical palette for the genre pie.
 const PIE = ['#C05D22', '#2F855A', '#3B6FB0', '#B23A48', '#7C3AED', '#0D9488', '#CA8A04'];
@@ -378,6 +379,26 @@ export default function MetricsView({ books }) {
         )}
       </div>
 
+      {/* Streak nudge — gentle, loss-aversion-friendly (no shaming) */}
+      <div className="rounded-3xl border border-brand-100 bg-gradient-to-r from-brand-50 to-surface p-5 shadow-sm flex items-center gap-4">
+        <span className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-sm shrink-0">
+          <Flame size={22} />
+        </span>
+        <div>
+          {streak > 0 ? (
+            <>
+              <p className="font-display font-semibold text-ink text-lg">{streak}-day reading streak</p>
+              <p className="text-sm text-stone-500">Read a little today to keep it glowing.</p>
+            </>
+          ) : (
+            <>
+              <p className="font-display font-semibold text-ink text-lg">Start a streak today</p>
+              <p className="text-sm text-stone-500">Log a reading session and your streak begins.</p>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Highlights with covers */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Highlight label="Top Rated" icon={<Trophy size={13} />} book={topRated} meta={topRated ? `${topRated.rating}★ · ${topRated.author}` : ''} />
@@ -416,6 +437,9 @@ export default function MetricsView({ books }) {
         <StatTile icon={<Timer size={15} className="text-brand-500" />} label="Longest Session" value={longest ? `${longest}` : '—'} sub={longest ? 'min' : ''} />
         <StatTile icon={<XCircle size={15} className="text-status-dnf" />} label="Set Aside (DNF)" value={dnf.length} />
       </div>
+
+      {/* Reading achievements */}
+      <Achievements books={books} streak={streak} totalPagesRead={totalPagesRead} />
 
       {/* Streak + status + this year */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">

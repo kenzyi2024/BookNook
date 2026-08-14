@@ -74,7 +74,9 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
   const filtered = filter === 'all' ? books : books.filter((b) => b.status === filter);
   const sorted = sortBooks(filtered, sort);
   const q = query.trim().toLowerCase();
-  const searched = q ? sorted.filter((b) => `${b.title} ${b.author}`.toLowerCase().includes(q)) : sorted;
+  const searched = q
+    ? sorted.filter((b) => `${b.title} ${b.author} ${b.genre || ''} ${(b.moods || []).join(' ')}`.toLowerCase().includes(q))
+    : sorted;
 
   // Persist a resolved cover/tint to the DB (best-effort; self-heals existing books).
   const persistCover = (id, patch) => {

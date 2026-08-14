@@ -8,6 +8,7 @@ import NotesJournal from './NotesJournal';
 import ShareCard from './ShareCard';
 import { STATUS_OPTIONS } from '../../lib/status';
 import { GENRE_OPTIONS, normalizeGenre } from '../../lib/genres';
+import { MOODS } from '../../lib/moods';
 import { resolveCover, refreshCover } from '../../lib/covers';
 import { useToast } from '../ui/ToastProvider';
 
@@ -69,6 +70,17 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
     setRatingInput(val);
     const num = parseFloat(val);
     if (!isNaN(num) && num >= 0 && num <= 5) onUpdate({ rating: num });
+  };
+
+  const setRating = (num) => {
+    setRatingInput(String(num));
+    onUpdate({ rating: num });
+  };
+
+  const toggleMood = (mood) => {
+    const cur = book.moods || [];
+    const next = cur.includes(mood) ? cur.filter((m) => m !== mood) : [...cur, mood];
+    onUpdate({ moods: next });
   };
 
   const handleStatusChange = (status) => {
@@ -194,7 +206,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
           {(book.status === 'read' || book.status === 'dnf') && (
             <div className="flex items-center gap-4 bg-stone-50 p-4 rounded-2xl border border-stone-100 w-max">
               <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Your Rating:</span>
-              <StarRating value={book.rating || 0} />
+              <StarRating value={book.rating || 0} onChange={setRating} />
               <input
                 type="number"
                 step="0.01"
@@ -207,6 +219,30 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
               />
             </div>
           )}
+
+          {/* Mood tags — how the book felt, not its genre */}
+          <div className="mt-1">
+            <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Moods</span>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {MOODS.map((mood) => {
+                const on = (book.moods || []).includes(mood);
+                return (
+                  <button
+                    key={mood}
+                    onClick={() => toggleMood(mood)}
+                    aria-pressed={on}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      on
+                        ? 'bg-brand-500 text-white'
+                        : 'bg-surface text-stone-500 border border-stone-200 hover:border-brand-300 hover:text-brand-600'
+                    }`}
+                  >
+                    {mood}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

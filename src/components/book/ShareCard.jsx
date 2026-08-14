@@ -58,17 +58,48 @@ function fitParagraph(ctx, text, { maxWidth, maxHeight, family, style, sizes, lh
   return { size: chosen, lines };
 }
 
-// Recolor the (transparent-background) logo to a single tint.
+// Recolor the (transparent-background) logo to a single tint AND trim the
+// surrounding transparent padding, so the visible mark fills the space we give it.
 function tintedLogo(color) {
   if (!logoImage.complete || !logoImage.naturalWidth) return null;
+  const iw = logoImage.naturalWidth;
+  const ih = logoImage.naturalHeight;
+  const src = document.createElement('canvas');
+  src.width = iw;
+  src.height = ih;
+  const sc = src.getContext('2d');
+  sc.drawImage(logoImage, 0, 0);
+
+  // Find the bounding box of non-transparent pixels to crop the padding.
+  let minX = 0, minY = 0, maxX = iw - 1, maxY = ih - 1;
+  try {
+    const data = sc.getImageData(0, 0, iw, ih).data;
+    minX = iw; minY = ih; maxX = 0; maxY = 0;
+    for (let y = 0; y < ih; y++) {
+      for (let x = 0; x < iw; x++) {
+        if (data[(y * iw + x) * 4 + 3] > 12) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < minX || maxY < minY) { minX = 0; minY = 0; maxX = iw - 1; maxY = ih - 1; }
+  } catch {
+    /* if reading pixels fails, fall back to the full image */
+  }
+
+  const cw = maxX - minX + 1;
+  const ch = maxY - minY + 1;
   const o = document.createElement('canvas');
-  o.width = logoImage.naturalWidth;
-  o.height = logoImage.naturalHeight;
+  o.width = cw;
+  o.height = ch;
   const c = o.getContext('2d');
-  c.drawImage(logoImage, 0, 0);
+  c.drawImage(src, minX, minY, cw, ch, 0, 0, cw, ch);
   c.globalCompositeOperation = 'source-in';
   c.fillStyle = color;
-  c.fillRect(0, 0, o.width, o.height);
+  c.fillRect(0, 0, cw, ch);
   return o;
 }
 
@@ -190,15 +221,18 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
       const drawLogo = () => {
         const tl = tintedLogo(logoTint);
         if (tl) {
-          const lh = 128;
-          const lw = Math.min((tl.width / tl.height) * lh, W - 240);
-          ctx.globalAlpha = 0.96;
-          ctx.drawImage(tl, W / 2 - lw / 2, H - 198, lw, lh);
+          const maxW = 520;
+          const maxH = 140;
+          const scale = Math.min(maxW / tl.width, maxH / tl.height);
+          const lw = tl.width * scale;
+          const lh = tl.height * scale;
+          ctx.globalAlpha = 0.97;
+          ctx.drawImage(tl, W / 2 - lw / 2, H - 74 - lh, lw, lh);
           ctx.globalAlpha = 1;
         } else {
           ctx.fillStyle = logoTint;
-          ctx.font = '700 72px Georgia, serif';
-          ctx.fillText('BookNook', W / 2, H - 86);
+          ctx.font = '700 84px Georgia, serif';
+          ctx.fillText('BookNook', W / 2, H - 96);
         }
       };
 
@@ -207,19 +241,29 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         const ch = 390;
         drawCover(W / 2 - cw / 2, 185, cw, ch, 14);
 
-        let y = 645;
+        // Pre-fit the title, then vertically center the whole text block between
+        // the cover and the footer, so a card with no rating doesn't leave a big
+        // empty band. The finished date flows right after the stats.
         ctx.fillStyle = CREAM;
         const title = fitParagraph(ctx, book.title, {
           maxWidth: W - 220, maxHeight: 190, family: serif, style: '700', sizes: [72, 64, 56, 50], lh: 1.14,
         });
-        title.lines.forEach((ln) => { ctx.fillText(ln, W / 2, y); y += title.size * 1.14; });
+        const lineH = title.size * 1.14;
+        const hasRating = !!book.rating;
+        const blockH =
+          title.lines.length * lineH + 70 + (hasRating ? 92 : 0) + 104 + (book.finishedAt ? 40 : 0);
+        const regionTop = 600;
+        const regionBottom = H - 250;
+        let y = regionTop + Math.max(0, (regionBottom - regionTop - blockH) / 2) + title.size;
+
+        title.lines.forEach((ln) => { ctx.fillText(ln, W / 2, y); y += lineH; });
 
         ctx.fillStyle = hexA(CREAM, 0.85);
         ctx.font = `italic 38px ${serif}`;
-        ctx.fillText(book.author, W / 2, y + 8);
-        y += 78;
+        ctx.fillText(book.author, W / 2, y + 6);
+        y += 70;
 
-        if (book.rating) { drawStars(book.rating, y + 18); y += 84; }
+        if (hasRating) { drawStars(book.rating, y + 20); y += 92; }
 
         // stats row
         const stat = (label, val, x) => {
@@ -234,11 +278,12 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         stat('GENRE', (book.genre || '—').slice(0, 13), W / 2 + 190);
         ctx.fillStyle = hexA(CREAM, 0.22);
         ctx.fillRect(W / 2 - 1, y - 22, 2, 92);
+        y += 104;
 
         if (book.finishedAt) {
           ctx.fillStyle = hexA(CREAM, 0.75);
           ctx.font = `28px ${serif}`;
-          ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, H - 260);
+          ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, y);
         }
       } else {
         // quote / reflection — text-forward layout

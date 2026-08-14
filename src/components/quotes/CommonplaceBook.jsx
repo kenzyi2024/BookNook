@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Quote, Search, Copy, Check, BookOpen, Feather } from 'lucide-react';
+import { Quote, Search, Copy, Check, BookOpen, Feather, Share2 } from 'lucide-react';
 import { useToast } from '../ui/ToastProvider';
 import ReflectionCard from '../reflections/ReflectionCard';
+import ShareCard from '../book/ShareCard';
 
 /**
  * The Commonplace Book — the reader's own writing about their books, gathered in
@@ -13,6 +14,7 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
   const [view, setView] = useState('quotes'); // 'quotes' | 'reflections'
   const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(null);
+  const [shareQuote, setShareQuote] = useState(null);
 
   // Every saved quote, with its source book attached.
   const quotes = useMemo(() => {
@@ -138,13 +140,22 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
                       <span className="block text-xs text-stone-400 truncate">{item.book.author}{item.page ? ` · p.${item.page}` : ''}</span>
                     </span>
                   </button>
-                  <button
-                    onClick={() => copy(item)}
-                    aria-label="Copy quote"
-                    className="shrink-0 p-2 rounded-full text-stone-400 hover:text-brand-600 hover:bg-stone-100 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  >
-                    {copied === item.key ? <Check size={15} className="text-status-read" /> : <Copy size={15} />}
-                  </button>
+                  <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setShareQuote(item)}
+                      aria-label="Share quote"
+                      className="p-2 rounded-full text-stone-400 hover:text-brand-600 hover:bg-stone-100 transition-colors"
+                    >
+                      <Share2 size={15} />
+                    </button>
+                    <button
+                      onClick={() => copy(item)}
+                      aria-label="Copy quote"
+                      className="p-2 rounded-full text-stone-400 hover:text-brand-600 hover:bg-stone-100 transition-colors"
+                    >
+                      {copied === item.key ? <Check size={15} className="text-status-read" /> : <Copy size={15} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -173,6 +184,10 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
             </div>
           ))}
         </div>
+      )}
+
+      {shareQuote && (
+        <ShareCard kind="quote" book={shareQuote.book} quote={shareQuote} onClose={() => setShareQuote(null)} />
       )}
     </div>
   );

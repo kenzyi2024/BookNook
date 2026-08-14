@@ -284,7 +284,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
         }}
       />
 
-      {shareOpen && <ShareCard book={book} onClose={() => setShareOpen(false)} />}
+      {shareOpen && <ShareCard kind="book" book={book} onClose={() => setShareOpen(false)} />}
     </div>
   );
 }

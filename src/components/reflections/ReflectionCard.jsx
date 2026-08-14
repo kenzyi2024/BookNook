@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { CornerDownRight, Plus, BookOpen } from 'lucide-react';
+import { CornerDownRight, Plus, BookOpen, Share2 } from 'lucide-react';
 import { promptForStage, addFollowUp } from '../../lib/reflections';
 import { fmtDate } from '../../lib/format';
+import ShareCard from '../book/ShareCard';
 
 /**
  * One reflection: the prompt the reader was asked, their answer, and any
@@ -11,6 +12,7 @@ import { fmtDate } from '../../lib/format';
 export default function ReflectionCard({ book, answer, index, onUpdate, showBook = false, onOpenBook }) {
   const [adding, setAdding] = useState(false);
   const [text, setText] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
   const prompt = promptForStage(book, answer.stage);
   const followUps = answer.followUps || [];
 
@@ -62,10 +64,10 @@ export default function ReflectionCard({ book, answer, index, onUpdate, showBook
         </div>
       )}
 
-      {/* Add a follow-up */}
-      <div className="px-5 pb-4 pt-1">
+      {/* Actions */}
+      <div className="px-5 pb-4 pt-1 flex items-center justify-between gap-3">
         {adding ? (
-          <div>
+          <div className="w-full">
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -90,14 +92,32 @@ export default function ReflectionCard({ book, answer, index, onUpdate, showBook
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
-          >
-            <Plus size={15} /> Add a thought
-          </button>
+          <>
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+            >
+              <Plus size={15} /> Add a thought
+            </button>
+            <button
+              onClick={() => setShareOpen(true)}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-400 hover:text-brand-600 transition-colors"
+              aria-label="Share this reflection"
+            >
+              <Share2 size={15} /> Share
+            </button>
+          </>
         )}
       </div>
+
+      {shareOpen && (
+        <ShareCard
+          kind="reflection"
+          book={book}
+          answer={{ ...answer, prompt: prompt?.prompt }}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -54,7 +54,7 @@ export default function Achievements({ books, streak = 0, totalPagesRead = 0 }) 
                 <Check size={12} strokeWidth={3} />
               </span>
             )}
-            <div className={earned ? '' : 'grayscale opacity-40'}>
+            <div className={earned ? 'text-brand-600' : 'text-stone-300'}>
               <BadgeCreature id={id} />
             </div>
             <span className={`text-sm font-bold leading-tight ${earned ? 'text-brand-800' : 'text-stone-500'}`}>

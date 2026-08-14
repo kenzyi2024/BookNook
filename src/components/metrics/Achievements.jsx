@@ -1,10 +1,11 @@
-import { BookOpen, Library, Trophy, Layers, Flame, Compass, Star, Quote, Ruler, Lock } from 'lucide-react';
+import { Trophy, Check } from 'lucide-react';
 import { normalizeGenre } from '../../lib/genres';
+import BadgeCreature from './BadgeCreature';
 
 /**
- * Reading achievements — a gentle, cozy badge wall. Earned badges glow in the
- * theme color; locked ones are dimmed with a hint on how to earn them. No emojis:
- * every badge uses the app's line-icon art.
+ * Reading achievements — a cozy badge wall of little creatures. Each badge always
+ * shows what it's for; earned ones come to life in color with a check, unearned
+ * ones stay greyed until you get there. Every critter is custom SVG art (no emojis).
  */
 export default function Achievements({ books, streak = 0, totalPagesRead = 0 }) {
   const finished = books.filter((b) => b.status === 'read').length;
@@ -18,16 +19,16 @@ export default function Achievements({ books, streak = 0, totalPagesRead = 0 }) 
     .reduce((max, b) => Math.max(max, b.totalPages || 0), 0);
 
   const BADGES = [
-    { id: 'first', label: 'First Page', Icon: BookOpen, earned: finished >= 1, hint: 'Finish your first book' },
-    { id: 'bookworm', label: 'Bookworm', Icon: Library, earned: finished >= 10, hint: 'Finish 10 books' },
-    { id: 'voracious', label: 'Voracious', Icon: Trophy, earned: finished >= 25, hint: 'Finish 25 books' },
-    { id: 'marathon', label: 'Marathoner', Icon: Layers, earned: totalPagesRead >= 10000, hint: 'Read 10,000 pages' },
-    { id: 'streak7', label: 'On Fire', Icon: Flame, earned: streak >= 7, hint: 'Reach a 7-day streak' },
-    { id: 'streak30', label: 'Devoted', Icon: Flame, earned: streak >= 30, hint: 'Reach a 30-day streak' },
-    { id: 'eclectic', label: 'Eclectic', Icon: Compass, earned: genres >= 5, hint: 'Read across 5 genres' },
-    { id: 'critic', label: 'Critic', Icon: Star, earned: ratedCount >= 10, hint: 'Rate 10 books' },
-    { id: 'collector', label: 'Collector', Icon: Quote, earned: quotesCount >= 25, hint: 'Save 25 quotes' },
-    { id: 'chunky', label: 'Doorstopper', Icon: Ruler, earned: longestFinished >= 600, hint: 'Finish a 600+ page book' },
+    { id: 'first', label: 'First Page', desc: 'Finish your first book', earned: finished >= 1 },
+    { id: 'bookworm', label: 'Bookworm', desc: 'Finish 10 books', earned: finished >= 10 },
+    { id: 'voracious', label: 'Voracious', desc: 'Finish 25 books', earned: finished >= 25 },
+    { id: 'marathon', label: 'Marathoner', desc: 'Read 10,000 pages', earned: totalPagesRead >= 10000 },
+    { id: 'streak7', label: 'On Fire', desc: 'Reach a 7-day streak', earned: streak >= 7 },
+    { id: 'streak30', label: 'Devoted', desc: 'Reach a 30-day streak', earned: streak >= 30 },
+    { id: 'eclectic', label: 'Eclectic', desc: 'Read across 5 genres', earned: genres >= 5 },
+    { id: 'critic', label: 'Critic', desc: 'Rate 10 books', earned: ratedCount >= 10 },
+    { id: 'collector', label: 'Collector', desc: 'Save 25 quotes', earned: quotesCount >= 25 },
+    { id: 'chunky', label: 'Doorstopper', desc: 'Finish a 600+ page book', earned: longestFinished >= 600 },
   ];
 
   const earnedCount = BADGES.filter((b) => b.earned).length;
@@ -41,27 +42,25 @@ export default function Achievements({ books, streak = 0, totalPagesRead = 0 }) 
         <span className="text-sm text-stone-400 font-medium">{earnedCount} / {BADGES.length}</span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {BADGES.map(({ id, label, Icon, earned, hint }) => (
+        {BADGES.map(({ id, label, desc, earned }) => (
           <div
             key={id}
-            title={earned ? label : hint}
-            className={`relative flex flex-col items-center text-center gap-2 rounded-2xl p-4 border transition-colors ${
-              earned
-                ? 'bg-brand-50 border-brand-200'
-                : 'bg-stone-50 border-stone-200/70 opacity-70'
+            className={`relative flex flex-col items-center text-center gap-1.5 rounded-2xl p-4 border transition-colors ${
+              earned ? 'bg-brand-50 border-brand-200' : 'bg-stone-50 border-stone-200/70'
             }`}
           >
-            <span
-              className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                earned ? 'bg-brand-500 text-white shadow-sm' : 'bg-stone-200 text-stone-400'
-              }`}
-            >
-              {earned ? <Icon size={20} /> : <Lock size={16} />}
-            </span>
-            <span className={`text-xs font-semibold leading-tight ${earned ? 'text-brand-800' : 'text-stone-400'}`}>
+            {earned && (
+              <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-status-read text-white flex items-center justify-center shadow-sm">
+                <Check size={12} strokeWidth={3} />
+              </span>
+            )}
+            <div className={earned ? '' : 'grayscale opacity-40'}>
+              <BadgeCreature id={id} />
+            </div>
+            <span className={`text-sm font-bold leading-tight ${earned ? 'text-brand-800' : 'text-stone-500'}`}>
               {label}
             </span>
-            {!earned && <span className="text-[10px] text-stone-400 leading-tight">{hint}</span>}
+            <span className="text-[11px] leading-tight text-stone-400">{desc}</span>
           </div>
         ))}
       </div>

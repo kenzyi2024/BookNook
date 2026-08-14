@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2, Feather } from 'lucide-react';
 import StarRating from '../ui/StarRating';
+import ReflectionsHistory from '../reflections/ReflectionsHistory';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
 import SessionLogger from './SessionLogger';
@@ -16,7 +17,7 @@ import { useToast } from '../ui/ToastProvider';
  * Full-page view for one book: cover, metadata, status/rating controls, and the
  * Progress / Notes / AI tabs, plus a shareable finish card.
  */
-export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
+export default function BookDetailView({ book, onUpdate, onBack, onDelete, onReflect }) {
   const [activeSubTab, setActiveSubTab] = useState('progress');
   const [coverUrl, setCoverUrl] = useState(book.coverUrl || '');
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -95,6 +96,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
   const tabs = [
     { id: 'progress', icon: <BookOpen size={18} />, label: 'Progress' },
     { id: 'notes', icon: <Edit3 size={18} />, label: 'Notes' },
+    { id: 'reflections', icon: <Feather size={18} />, label: 'Reflections' },
     { id: 'ai', icon: <Sparkles size={18} />, label: 'AI Tools' },
   ];
 
@@ -265,6 +267,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete }) {
       <div className="bg-surface p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100 min-h-[400px]">
         {activeSubTab === 'progress' && <SessionLogger book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'notes' && <NotesJournal book={book} onUpdate={onUpdate} />}
+        {activeSubTab === 'reflections' && <ReflectionsHistory book={book} onReflect={onReflect} />}
         {activeSubTab === 'ai' && <AIToolsView book={book} onUpdate={onUpdate} />}
       </div>
 

@@ -22,6 +22,60 @@ export function isEligible(book) {
   return book.status === 'read' || (book.quotes?.length || 0) > 0;
 }
 
+const stripMd = (s = '') => s.replace(/\*\*|\*|`|_/g, '').trim();
+
+/** A short, clean excerpt of a longer note/entry for use inside a prompt. */
+function snippet(text = '', max = 160) {
+  const t = stripMd(text).replace(/\s+/g, ' ');
+  return t.length > max ? `${t.slice(0, max).trim()}…` : t;
+}
+
+/**
+ * Pull the actual theme names out of a cached Analysis Kit so prompts can name
+ * them back to the reader instead of saying a vague "the themes." Tolerant of the
+ * bold-header / bulleted format the kit produces; returns [] if it can't tell.
+ */
+export function extractThemes(analysis = '') {
+  if (!analysis) return [];
+  const lines = analysis.split(/\r?\n/);
+  const label = (s) =>
+    stripMd(s)
+      .replace(/^[\s\-*••\d.)]+/, '')
+      .split(/[—:–-]/)[0]
+      .trim();
+
+  const headerIdx = lines.findIndex((l) => /theme/i.test(l));
+  if (headerIdx === -1) return [];
+
+  const items = [];
+
+  // Case 1: an inline comma-separated list on the header line ("Themes: a, b, c").
+  const afterColon = lines[headerIdx].split(':').slice(1).join(':');
+  if (afterColon && afterColon.includes(',')) {
+    afterColon.split(/[,;]/).forEach((p) => {
+      const c = stripMd(p).trim();
+      if (c) items.push(c);
+    });
+  }
+
+  // Case 2: a bulleted / listed block under the header.
+  for (let j = headerIdx + 1; j < lines.length && items.length < 4; j++) {
+    const raw = lines[j];
+    if (!raw.trim()) { if (items.length) break; else continue; }
+    const isBullet = /^\s*[-*••\d]/.test(raw) || /\*\*/.test(raw);
+    const isHeader = /^\s*#/.test(raw) || /^\s*\*\*[^*]+\*\*\s*$/.test(raw) === false && /motif|symbol|question|character/i.test(raw);
+    if (!isBullet && items.length) break;
+    if (isBullet) {
+      const c = label(raw);
+      if (c && c.length >= 2 && c.length <= 44) items.push(c);
+    } else if (isHeader) {
+      break;
+    }
+  }
+
+  return items.slice(0, 4);
+}
+
 /**
  * The rotating set of prompts for a book, drawn from what the reader actually
  * captured. Stage N shows pool[N % pool.length], so questions vary over time.
@@ -31,25 +85,42 @@ export function buildPool(book) {
   const pool = [];
 
   (book.quotes || []).slice(0, 3).forEach((q) => {
-    if (q?.text) pool.push({ kind: 'quote', prompt: `You saved this line from “${t}”:\n\n“${q.text}”\n\nWhat still resonates about it?` });
+    if (q?.text) pool.push({ kind: 'quote', prompt: `You saved this line from “${t}”${q.page ? ` (p.${q.page})` : ''}:\n\n“${q.text}”\n\nWhat still resonates about it?` });
   });
 
-  if ((book.journalEntries?.length || 0) > 0 || (book.notes || '').trim()) {
-    pool.push({ kind: 'note', prompt: `Think back on “${t}.” What moment or idea has stayed with you most?` });
+  // Reference the reader's actual journal entry / note, not a vague "your notes."
+  const lastEntry = (book.journalEntries || []).slice(-1)[0];
+  if (lastEntry?.text) {
+    pool.push({ kind: 'note', prompt: `You wrote in your journal about “${t}”:\n\n“${snippet(lastEntry.text)}”\n\nReading it back now, what stands out?` });
+  } else if ((book.notes || '').trim()) {
+    pool.push({ kind: 'note', prompt: `Your note on “${t}” reads:\n\n“${snippet(book.notes)}”\n\nWhat would you add to it now?` });
   }
 
+  // Name the actual themes from the Analysis Kit when we can parse them.
   if ((book.aiAnalysis || '').trim()) {
-    pool.push({ kind: 'theme', prompt: `You explored the themes of “${t}.” Which one feels most true to you now — and why?` });
+    const themes = extractThemes(book.aiAnalysis);
+    if (themes.length) {
+      pool.push({ kind: 'theme', prompt: `In your Analysis Kit for “${t}” you flagged these themes:\n\n${themes.map((x) => `• ${x}`).join('\n')}\n\nWhich one resonates most with you now — and where did you feel it in the story?` });
+    } else {
+      pool.push({ kind: 'theme', prompt: `Looking back at “${t},” what do you think it was really about — and what in the story makes you say so?` });
+    }
   }
 
   if ((book.rating || 0) >= 4) {
-    pool.push({ kind: 'recommend', prompt: `You loved “${t}.” Who would you hand it to, and what would you say to sell them on it?` });
+    pool.push({ kind: 'recommend', prompt: `You rated “${t}” ${book.rating}★. Who would you hand it to, and what one line would you use to sell them on it?` });
   }
 
   // Always available — a clean closing question.
   pool.push({ kind: 'takeaway', prompt: `In one sentence, what will you carry with you from “${t}”?` });
 
   return pool;
+}
+
+/** The prompt object a given stage maps to (used to label saved answers). */
+export function promptForStage(book, stage) {
+  const pool = buildPool(book);
+  if (!pool.length) return null;
+  return pool[stage % pool.length];
 }
 
 function stageOf(book) {
@@ -88,6 +159,16 @@ export function dueReflections(books, { now = Date.now(), limit = 6 } = {}) {
 /** Total number currently due (uncapped) — handy for the banner count. */
 export function dueCount(books, now = Date.now()) {
   return books.filter(isEligible).filter((b) => currentPrompt(b) && dueAtOf(b) <= now).length;
+}
+
+/** Is a single book's next reflection ready right now? */
+export function isDue(book, now = Date.now()) {
+  return isEligible(book) && !!currentPrompt(book) && dueAtOf(book) <= now;
+}
+
+/** When this book's next reflection is due (Date), or null if it has none. */
+export function nextDueAt(book) {
+  return isEligible(book) && currentPrompt(book) ? new Date(dueAtOf(book)) : null;
 }
 
 /**

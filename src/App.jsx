@@ -7,7 +7,7 @@ import MetricsView from './components/metrics/MetricsView';
 import DiscoverView from './components/discover/DiscoverView';
 import CommonplaceBook from './components/quotes/CommonplaceBook';
 import ReflectionsPanel from './components/reflections/ReflectionsPanel';
-import { dueReflections } from './lib/reflections';
+import { dueReflections, currentPrompt } from './lib/reflections';
 import { Feather } from 'lucide-react';
 import BookDetailView from './components/book/BookDetailView';
 import AddBookModal from './components/book/AddBookModal';
@@ -41,6 +41,10 @@ export default function App() {
   const dueList = useMemo(() => dueReflections(books), [books]);
   const [reflectItems, setReflectItems] = useState(null); // snapshot while the panel is open
   const openReflect = () => { setReflectItems(dueList); };
+  const openReflectForBook = (book) => {
+    const prompt = currentPrompt(book);
+    if (prompt) setReflectItems([{ book, prompt }]);
+  };
 
   // Load the signed-in user's library (scoped server-side by their user id).
   useEffect(() => {
@@ -245,6 +249,7 @@ export default function App() {
             onUpdate={(updates) => handleUpdateBook(selectedBook._id, updates)}
             onBack={() => setSelectedBook(null)}
             onDelete={handleDeleteBook}
+            onReflect={() => openReflectForBook(selectedBook)}
           />
         ) : activeTab === 'library' ? (
           <LibraryView

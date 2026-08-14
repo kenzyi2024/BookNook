@@ -190,15 +190,15 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
       const drawLogo = () => {
         const tl = tintedLogo(logoTint);
         if (tl) {
-          const lh = 76;
-          const lw = (tl.width / tl.height) * lh;
-          ctx.globalAlpha = 0.95;
-          ctx.drawImage(tl, W / 2 - lw / 2, H - 150, lw, lh);
+          const lh = 128;
+          const lw = Math.min((tl.width / tl.height) * lh, W - 240);
+          ctx.globalAlpha = 0.96;
+          ctx.drawImage(tl, W / 2 - lw / 2, H - 198, lw, lh);
           ctx.globalAlpha = 1;
         } else {
           ctx.fillStyle = logoTint;
-          ctx.font = '700 46px Georgia, serif';
-          ctx.fillText('BookNook', W / 2, H - 96);
+          ctx.font = '700 72px Georgia, serif';
+          ctx.fillText('BookNook', W / 2, H - 86);
         }
       };
 
@@ -238,7 +238,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         if (book.finishedAt) {
           ctx.fillStyle = hexA(CREAM, 0.75);
           ctx.font = `28px ${serif}`;
-          ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, H - 205);
+          ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, H - 260);
         }
       } else {
         // quote / reflection — text-forward layout
@@ -262,7 +262,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         }
 
         const bodyTop = kind === 'reflection' ? topY : 360;
-        const bodyMaxH = 700 - (bodyTop - 360);
+        const bodyMaxH = (H - 430) - bodyTop;
         ctx.fillStyle = CREAM;
         const body = fitParagraph(ctx, `${text}`, {
           maxWidth: W - 240, maxHeight: bodyMaxH, family: serif,
@@ -275,7 +275,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         if (kind === 'quote') {
           ctx.fillStyle = hexA(GOLD, 0.85);
           ctx.font = `700 150px ${serif}`;
-          ctx.fillText('”', W / 2, Math.min(by + 90, H - 360));
+          ctx.fillText('”', W / 2, Math.min(by + 90, H - 450));
         }
 
         // attribution: small cover + title/author, centered as a group
@@ -286,7 +286,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         const titleW = ctx.measureText(book.title).width;
         const groupW = cw + gap + Math.min(titleW, 520);
         const gx = W / 2 - groupW / 2;
-        const gy = H - 320;
+        const gy = H - 400;
         drawCover(gx, gy, cw, chh, 8);
         ctx.textAlign = 'left';
         ctx.fillStyle = CREAM;

@@ -38,39 +38,50 @@ function snippet(text = '', max = 160) {
 export function extractThemes(analysis = '') {
   if (!analysis) return [];
   const lines = analysis.split(/\r?\n/);
-  const label = (s) =>
-    stripMd(s)
-      .replace(/^[\s\-*••\d.)]+/, '')
-      .split(/[—:–-]/)[0]
-      .trim();
 
-  const headerIdx = lines.findIndex((l) => /theme/i.test(l));
-  if (headerIdx === -1) return [];
+  // Strip markdown + any leading bullet/number so we can inspect a line's text.
+  const clean = (s) => stripMd(s).replace(/^[\s\-*••\d.)]+/, '').trim();
+  // A line that's really a *section header* (Themes / Motifs / Question / etc.) —
+  // never a theme itself.
+  const isSection = (s) =>
+    /^(the\s+)?(major|key|central|main|core)?\s*(themes?|motifs?|symbols?|imagery|questions?|a\s+question|characters?|summary|analysis|takeaways?)\b/i.test(clean(s));
+  // The specific header that introduces the theme list.
+  const isThemeHeader = (s) => {
+    const c = clean(s).replace(/[:.]+$/, '');
+    return /^(the\s+)?(major|key|central|main|core)?\s*themes?$/i.test(c);
+  };
+
+  // Find the themes header — a dedicated header line first, else an inline
+  // "Themes: a, b, c" line. Anything vaguer is ignored (avoids grabbing prose).
+  let idx = lines.findIndex(isThemeHeader);
+  if (idx === -1) {
+    idx = lines.findIndex((l) => /themes?\s*:/i.test(l) && l.split(':').slice(1).join(':').includes(','));
+  }
+  if (idx === -1) return [];
 
   const items = [];
+  const push = (raw) => {
+    const c = clean(raw).split(/[—:–]/)[0].replace(/[.,;]+$/, '').trim();
+    if (c && c.length >= 3 && c.length <= 44 && !isSection(c)) items.push(c);
+  };
 
-  // Case 1: an inline comma-separated list on the header line ("Themes: a, b, c").
-  const afterColon = lines[headerIdx].split(':').slice(1).join(':');
+  // Inline list on the header line itself.
+  const afterColon = lines[idx].split(':').slice(1).join(':');
   if (afterColon && afterColon.includes(',')) {
     afterColon.split(/[,;]/).forEach((p) => {
       const c = stripMd(p).trim();
-      if (c) items.push(c);
+      if (c && c.length <= 44 && !isSection(c)) items.push(c);
     });
   }
 
-  // Case 2: a bulleted / listed block under the header.
-  for (let j = headerIdx + 1; j < lines.length && items.length < 4; j++) {
+  // Otherwise, the listed items that follow, stopping at the next section.
+  for (let j = idx + 1; j < lines.length && items.length < 4; j++) {
     const raw = lines[j];
     if (!raw.trim()) { if (items.length) break; else continue; }
-    const isBullet = /^\s*[-*••\d]/.test(raw) || /\*\*/.test(raw);
-    const isHeader = /^\s*#/.test(raw) || /^\s*\*\*[^*]+\*\*\s*$/.test(raw) === false && /motif|symbol|question|character/i.test(raw);
-    if (!isBullet && items.length) break;
-    if (isBullet) {
-      const c = label(raw);
-      if (c && c.length >= 2 && c.length <= 44) items.push(c);
-    } else if (isHeader) {
-      break;
-    }
+    if (isSection(raw)) break;
+    const looksItem = /^\s*[-*••]/.test(raw) || /^\s*\d+[.)]/.test(raw) || /\*\*/.test(raw);
+    if (!looksItem) { if (items.length) break; else continue; }
+    push(raw);
   }
 
   return items.slice(0, 4);

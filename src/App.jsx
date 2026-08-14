@@ -8,7 +8,7 @@ import DiscoverView from './components/discover/DiscoverView';
 import CommonplaceBook from './components/quotes/CommonplaceBook';
 import ReflectionsPanel from './components/reflections/ReflectionsPanel';
 import { dueReflections, currentPrompt } from './lib/reflections';
-import { Feather } from 'lucide-react';
+import { Feather, X } from 'lucide-react';
 import BookDetailView from './components/book/BookDetailView';
 import AddBookModal from './components/book/AddBookModal';
 import { useApi } from './hooks/useApi';
@@ -21,7 +21,7 @@ import { localBooks } from './lib/localBooks';
 
 export default function App() {
   const { isAuthenticated, loading, user, logout, guest, converting, startAccountSave, cancelAccountSave, updateProfile } = useAuth();
-  const { setTheme } = useTheme();
+  const { setTheme, hideReflections, setHideReflections } = useTheme();
   const api = useApi();
   const toast = useToast();
 
@@ -225,22 +225,29 @@ export default function App() {
       )}
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6 pb-24">
-        {!selectedBook && dueList.length > 0 && (
-          <button
-            onClick={openReflect}
-            className="w-full mb-6 flex items-center gap-4 text-left rounded-3xl border border-brand-100 bg-gradient-to-r from-brand-50 to-surface p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <span className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-sm shrink-0">
-              <Feather size={22} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-display font-semibold text-ink text-lg">A moment to reflect</span>
-              <span className="block text-sm text-stone-500">
-                {dueList.length} book{dueList.length === 1 ? '' : 's'} to revisit — recall a little, and it sticks.
+        {!selectedBook && !hideReflections && dueList.length > 0 && (
+          <div className="w-full mb-6 flex items-center gap-4 rounded-3xl border border-brand-100 bg-gradient-to-r from-brand-50 to-surface p-4 sm:p-5 shadow-sm">
+            <button onClick={openReflect} className="flex items-center gap-4 text-left flex-1 min-w-0">
+              <span className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                <Feather size={22} />
               </span>
-            </span>
-            <span className="hidden sm:inline text-sm font-semibold text-brand-700 shrink-0">Reflect now →</span>
-          </button>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display font-semibold text-ink text-lg">A moment to reflect</span>
+                <span className="block text-sm text-stone-500">
+                  {dueList.length} book{dueList.length === 1 ? '' : 's'} to revisit — recall a little, and it sticks.
+                </span>
+              </span>
+              <span className="hidden sm:inline text-sm font-semibold text-brand-700 shrink-0">Reflect now →</span>
+            </button>
+            <button
+              onClick={() => { setHideReflections(true); toast.success('Reflection reminders hidden. Turn them back on in Account & appearance, or open any book’s Reflections tab.'); }}
+              aria-label="Hide reflection reminders from home"
+              title="Hide from home"
+              className="shrink-0 p-2 rounded-full text-stone-400 hover:text-ink hover:bg-stone-100 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
         )}
 
         {selectedBook ? (

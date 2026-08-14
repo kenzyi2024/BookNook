@@ -8,10 +8,12 @@ export const useTheme = () => useContext(ThemeContext);
 
 const KEY = 'booknook_theme';
 const DARK_KEY = 'booknook_dark';
+const HIDE_REFLECT_KEY = 'booknook_hide_reflect';
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem(KEY) || DEFAULT_THEME);
   const [dark, setDarkState] = useState(() => localStorage.getItem(DARK_KEY) === '1');
+  const [hideReflections, setHideReflectionsState] = useState(() => localStorage.getItem(HIDE_REFLECT_KEY) === '1');
 
   useEffect(() => {
     applyTheme(theme, dark);
@@ -31,8 +33,13 @@ export function ThemeProvider({ children }) {
     });
   }, []);
 
+  const setHideReflections = useCallback((hide) => {
+    localStorage.setItem(HIDE_REFLECT_KEY, hide ? '1' : '0');
+    setHideReflectionsState(hide);
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, dark, toggleDark }}>
+    <ThemeContext.Provider value={{ theme, setTheme, dark, toggleDark, hideReflections, setHideReflections }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import Navbar from './components/layout/Navbar';
 import AuthPage from './components/auth/AuthPage';
@@ -6,6 +6,9 @@ import LibraryView from './components/library/LibraryView';
 import MetricsView from './components/metrics/MetricsView';
 import DiscoverView from './components/discover/DiscoverView';
 import CommonplaceBook from './components/quotes/CommonplaceBook';
+import ReflectionsPanel from './components/reflections/ReflectionsPanel';
+import { dueReflections } from './lib/reflections';
+import { Feather } from 'lucide-react';
 import BookDetailView from './components/book/BookDetailView';
 import AddBookModal from './components/book/AddBookModal';
 import { useApi } from './hooks/useApi';
@@ -33,6 +36,11 @@ export default function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
   const sampleLoaded = books.some(isDemoBook);
+
+  // Reflections that are due to resurface (spaced retrieval on the reader's notes).
+  const dueList = useMemo(() => dueReflections(books), [books]);
+  const [reflectItems, setReflectItems] = useState(null); // snapshot while the panel is open
+  const openReflect = () => { setReflectItems(dueList); };
 
   // Load the signed-in user's library (scoped server-side by their user id).
   useEffect(() => {
@@ -213,6 +221,24 @@ export default function App() {
       )}
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6 pb-24">
+        {!selectedBook && dueList.length > 0 && (
+          <button
+            onClick={openReflect}
+            className="w-full mb-6 flex items-center gap-4 text-left rounded-3xl border border-brand-100 bg-gradient-to-r from-brand-50 to-surface p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <span className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Feather size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display font-semibold text-ink text-lg">A moment to reflect</span>
+              <span className="block text-sm text-stone-500">
+                {dueList.length} book{dueList.length === 1 ? '' : 's'} to revisit — recall a little, and it sticks.
+              </span>
+            </span>
+            <span className="hidden sm:inline text-sm font-semibold text-brand-700 shrink-0">Reflect now →</span>
+          </button>
+        )}
+
         {selectedBook ? (
           <BookDetailView
             book={selectedBook}
@@ -239,6 +265,14 @@ export default function App() {
       </main>
 
       {showAddModal && <AddBookModal onClose={() => setShowAddModal(false)} onAdd={handleAddBook} />}
+
+      {reflectItems && reflectItems.length > 0 && (
+        <ReflectionsPanel
+          items={reflectItems}
+          onSave={(bookId, reflection) => handleUpdateBook(bookId, { reflection })}
+          onClose={() => setReflectItems(null)}
+        />
+      )}
     </div>
   );
 }

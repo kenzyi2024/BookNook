@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2, Feather, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2, Feather, Users, Eye } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import ReflectionsHistory from '../reflections/ReflectionsHistory';
 import CharacterMap from './CharacterMap';
+import MotifTracker from './MotifTracker';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
 import SessionLogger from './SessionLogger';
@@ -98,6 +99,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
     { id: 'progress', icon: <BookOpen size={18} />, label: 'Progress' },
     { id: 'notes', icon: <Edit3 size={18} />, label: 'Notes' },
     { id: 'characters', icon: <Users size={18} />, label: 'Characters' },
+    { id: 'motifs', icon: <Eye size={18} />, label: 'Motifs' },
     { id: 'reflections', icon: <Feather size={18} />, label: 'Reflections' },
     { id: 'ai', icon: <Sparkles size={18} />, label: 'AI Tools' },
   ];
@@ -250,12 +252,12 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
         </div>
       </div>
 
-      <div className="flex border-b border-stone-200 mb-6">
+      <div className="flex border-b border-stone-200 mb-6 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all border-b-2 ${
+            className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-semibold whitespace-nowrap shrink-0 transition-all border-b-2 ${
               activeSubTab === tab.id
                 ? 'border-brand-500 text-brand-700'
                 : 'border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300'
@@ -270,6 +272,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
         {activeSubTab === 'progress' && <SessionLogger book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'notes' && <NotesJournal book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'characters' && <CharacterMap book={book} onUpdate={onUpdate} />}
+        {activeSubTab === 'motifs' && <MotifTracker book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'reflections' && <ReflectionsHistory book={book} onUpdate={onUpdate} onReflect={onReflect} />}
         {activeSubTab === 'ai' && <AIToolsView book={book} onUpdate={onUpdate} />}
       </div>

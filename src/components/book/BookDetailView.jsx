@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2, Feather } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit3, Sparkles, Share2, Headphones, RefreshCw, MoreHorizontal, Trash2, Feather, Users } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import ReflectionsHistory from '../reflections/ReflectionsHistory';
+import CharacterMap from './CharacterMap';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
 import SessionLogger from './SessionLogger';
@@ -96,6 +97,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
   const tabs = [
     { id: 'progress', icon: <BookOpen size={18} />, label: 'Progress' },
     { id: 'notes', icon: <Edit3 size={18} />, label: 'Notes' },
+    { id: 'characters', icon: <Users size={18} />, label: 'Characters' },
     { id: 'reflections', icon: <Feather size={18} />, label: 'Reflections' },
     { id: 'ai', icon: <Sparkles size={18} />, label: 'AI Tools' },
   ];
@@ -267,6 +269,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
       <div className="bg-surface p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100 min-h-[400px]">
         {activeSubTab === 'progress' && <SessionLogger book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'notes' && <NotesJournal book={book} onUpdate={onUpdate} />}
+        {activeSubTab === 'characters' && <CharacterMap book={book} onUpdate={onUpdate} />}
         {activeSubTab === 'reflections' && <ReflectionsHistory book={book} onUpdate={onUpdate} onReflect={onReflect} />}
         {activeSubTab === 'ai' && <AIToolsView book={book} onUpdate={onUpdate} />}
       </div>

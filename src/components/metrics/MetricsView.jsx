@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import {
   BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer,
   Trophy, Ruler, Users, Layers, Library, Sparkles, Flame,
 } from 'lucide-react';
+import WrappedView from './WrappedView';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
 import { normalizeGenre } from '../../lib/genres';
@@ -220,6 +222,7 @@ function lastMonths(n) {
 }
 
 export default function MetricsView({ books }) {
+  const [showWrapped, setShowWrapped] = useState(false);
   const read = books.filter((b) => b.status === 'read');
   const reading = books.filter((b) => b.status === 'reading');
   const dnf = books.filter((b) => b.status === 'dnf');
@@ -349,11 +352,20 @@ export default function MetricsView({ books }) {
 
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
-      <div className="mb-2 flex items-center gap-3">
-        <BarChart2 size={34} className="text-brand-600 drop-shadow-sm shrink-0" />
-        <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">
-          Your Year in Books
-        </h2>
+      {showWrapped && <WrappedView books={books} onClose={() => setShowWrapped(false)} />}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <BarChart2 size={34} className="text-brand-600 drop-shadow-sm shrink-0" />
+          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm truncate">
+            Your Year in Books
+          </h2>
+        </div>
+        <button
+          onClick={() => setShowWrapped(true)}
+          className="shrink-0 inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm px-4 py-2.5 rounded-full shadow-sm transition-colors"
+        >
+          <Sparkles size={16} /> Wrapped
+        </button>
       </div>
 
       {/* At a glance — the headline numbers */}

@@ -5,6 +5,7 @@ import ReflectionsHistory from '../reflections/ReflectionsHistory';
 import CharacterMap from './CharacterMap';
 import MotifTracker from './MotifTracker';
 import ContentWarningsModal from './ContentWarningsModal';
+import SeriesPanel from './SeriesPanel';
 import { level as cwLevel, LEVEL_ORDER } from '../../lib/contentWarnings';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
@@ -21,7 +22,7 @@ import { useToast } from '../ui/ToastProvider';
  * Full-page view for one book: cover, metadata, status/rating controls, and the
  * Progress / Notes / AI tabs, plus a shareable finish card.
  */
-export default function BookDetailView({ book, onUpdate, onBack, onDelete, onReflect }) {
+export default function BookDetailView({ book, books = [], onUpdate, onBack, onDelete, onReflect, onOpenBook }) {
   const [activeSubTab, setActiveSubTab] = useState('progress');
   const [coverUrl, setCoverUrl] = useState(book.coverUrl || '');
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -288,6 +289,8 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
               <p className="text-sm text-stone-400 mt-1 italic">Hidden — may contain spoilers.</p>
             )}
           </div>
+
+          <SeriesPanel book={book} books={books} onUpdate={onUpdate} onOpenBook={onOpenBook} />
         </div>
       </div>
 

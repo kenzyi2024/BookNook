@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown, Search, MoreHorizontal, Wand2, Trash2 } from 'lucide-react';
+import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown, Search, MoreHorizontal, Wand2, Trash2, ListOrdered } from 'lucide-react';
+import TBRPlanner from './TBRPlanner';
 import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
 import { SORT_OPTIONS, sortBooks } from '../../lib/sortBooks';
 import { getGadgetPos, setGadgetPos } from '../../lib/gadgetPos';
@@ -33,7 +34,7 @@ const STATUS_SHELVES = [
   { id: 'dnf', title: 'Set Aside', icon: Library },
 ];
 
-export default function LibraryView({ books, onSelect, onAddBook, onToggleSample, sampleLoaded, onClearLibrary }) {
+export default function LibraryView({ books, onSelect, onAddBook, onToggleSample, sampleLoaded, onClearLibrary, onUpdateBook }) {
   const toast = useToast();
   const api = useApi();
   const { user, updateProfile } = useAuth();
@@ -47,6 +48,14 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
   const [posBump, setPosBump] = useState(0);
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showTBR, setShowTBR] = useState(false);
+
+  const wantToRead = books.filter((b) => b.status === 'want_to_read');
+  const saveTBR = (ordered) => {
+    ordered.forEach((b, i) => { if (b.tbrRank !== i && onUpdateBook) onUpdateBook(b._id, { tbrRank: i }); });
+    setFilter('want_to_read');
+    setSort('tbr');
+  };
   const menuRef = useRef(null);
   useEffect(() => {
     const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
@@ -302,6 +311,12 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
                 >
                   <Sprout size={16} /> Decorate shelf
                 </button>
+                <button
+                  onClick={() => { setMenuOpen(false); setShowTBR(true); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  <ListOrdered size={16} /> Plan TBR
+                </button>
                 {onClearLibrary && (
                   <button
                     onClick={() => { setMenuOpen(false); onClearLibrary(); }}
@@ -376,6 +391,10 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
           onAdd={addGadget}
           onClose={() => setShowGadget(false)}
         />
+      )}
+
+      {showTBR && (
+        <TBRPlanner books={wantToRead} onSave={saveTBR} onClose={() => setShowTBR(false)} />
       )}
     </div>
   );

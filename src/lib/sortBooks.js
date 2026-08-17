@@ -8,7 +8,11 @@ export const SORT_OPTIONS = [
   { id: 'color', label: 'Cover color' },
   { id: 'rating', label: 'Top rated' },
   { id: 'pages', label: 'Longest' },
+  { id: 'tbr', label: 'TBR order' },
 ];
+
+/** Sort key for TBR: explicit rank first (asc), then recently added. */
+const tbrKey = (b) => (b.tbrRank == null ? Infinity : b.tbrRank);
 
 function parseRgb(s) {
   const m = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(s || '');
@@ -67,6 +71,8 @@ export function sortBooks(list, key) {
       return a.sort((x, y) => (y.rating || 0) - (x.rating || 0));
     case 'pages':
       return a.sort((x, y) => (y.totalPages || 0) - (x.totalPages || 0));
+    case 'tbr':
+      return a.sort((x, y) => tbrKey(x) - tbrKey(y) || ts(y) - ts(x));
     case 'added_desc':
     default:
       return a.sort((x, y) => ts(y) - ts(x));

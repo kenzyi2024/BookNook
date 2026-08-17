@@ -253,10 +253,12 @@ export default function App() {
         {selectedBook ? (
           <BookDetailView
             book={selectedBook}
+            books={books}
             onUpdate={(updates) => handleUpdateBook(selectedBook._id, updates)}
             onBack={() => setSelectedBook(null)}
             onDelete={handleDeleteBook}
             onReflect={() => openReflectForBook(selectedBook)}
+            onOpenBook={setSelectedBook}
           />
         ) : activeTab === 'library' ? (
           <LibraryView
@@ -266,6 +268,7 @@ export default function App() {
             onToggleSample={toggleSample}
             sampleLoaded={sampleLoaded}
             onClearLibrary={guest ? clearLibrary : undefined}
+            onUpdateBook={handleUpdateBook}
           />
         ) : activeTab === 'discover' ? (
           <DiscoverView books={books} onAdd={handleAddBook} />

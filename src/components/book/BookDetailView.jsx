@@ -4,6 +4,8 @@ import StarRating from '../ui/StarRating';
 import ReflectionsHistory from '../reflections/ReflectionsHistory';
 import CharacterMap from './CharacterMap';
 import MotifTracker from './MotifTracker';
+import ContentWarningsModal from './ContentWarningsModal';
+import { level as cwLevel, LEVEL_ORDER } from '../../lib/contentWarnings';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
 import SessionLogger from './SessionLogger';
@@ -30,6 +32,9 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
   const hasAttemptedFetch = useRef(false);
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cwOpen, setCwOpen] = useState(false);
+  const [cwRevealed, setCwRevealed] = useState(false);
+  const cwCount = (book.contentWarnings || []).length;
   const menuRef = useRef(null);
   useEffect(() => {
     const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
@@ -249,6 +254,40 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
               })}
             </div>
           </div>
+
+          {/* Content warnings — hidden until revealed, since they can be spoilers */}
+          <div className="mt-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Content warnings</span>
+              {cwCount > 0 && (
+                <button onClick={() => setCwRevealed((r) => !r)} className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                  {cwRevealed ? 'Hide' : `Show (${cwCount})`}
+                </button>
+              )}
+              <button onClick={() => setCwOpen(true)} className="text-xs font-semibold text-stone-400 hover:text-brand-600 ml-auto">
+                {cwCount > 0 ? 'Edit' : '+ Add'}
+              </button>
+            </div>
+            {cwCount === 0 ? (
+              <p className="text-sm text-stone-400 mt-1">None flagged.</p>
+            ) : cwRevealed ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {[...(book.contentWarnings || [])]
+                  .sort((a, b) => (LEVEL_ORDER[b.level] ?? 1) - (LEVEL_ORDER[a.level] ?? 1))
+                  .map((w) => {
+                    const l = cwLevel(w.level);
+                    return (
+                      <span key={w.name} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium" style={{ backgroundColor: l.bg, color: l.accent }}>
+                        {w.name}
+                        <span className="text-[10px] uppercase tracking-wide opacity-80">{l.label}</span>
+                      </span>
+                    );
+                  })}
+              </div>
+            ) : (
+              <p className="text-sm text-stone-400 mt-1 italic">Hidden — may contain spoilers.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -276,6 +315,14 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
         {activeSubTab === 'reflections' && <ReflectionsHistory book={book} onUpdate={onUpdate} onReflect={onReflect} />}
         {activeSubTab === 'ai' && <AIToolsView book={book} onUpdate={onUpdate} />}
       </div>
+
+      {cwOpen && (
+        <ContentWarningsModal
+          current={book.contentWarnings || []}
+          onSave={(list) => { onUpdate({ contentWarnings: list }); if (list.length) setCwRevealed(true); }}
+          onClose={() => setCwOpen(false)}
+        />
+      )}
 
       <ConfirmDialog
         open={confirmOpen}

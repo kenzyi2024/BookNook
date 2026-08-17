@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { NotebookPen, Quote, Plus, Trash2, Check, Loader2 } from 'lucide-react';
 import { fmtDate } from '../../lib/format';
 import { renderMarkdown } from '../../lib/markdown';
+import { HIGHLIGHTS, highlight, parseTags, DEFAULT_HIGHLIGHT } from '../../lib/highlights';
 
 /**
  * The Notes tab, styled as a real leather journal (à la Louis Carmen): a grained
@@ -197,13 +198,25 @@ function QuotesView({ book, onUpdate }) {
   const quotes = book.quotes || [];
   const [text, setText] = useState('');
   const [page, setPage] = useState('');
+  const [note, setNote] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [color, setColor] = useState(DEFAULT_HIGHLIGHT);
 
   const addQuote = () => {
     if (!text.trim()) return;
-    const q = { text: text.trim(), page: parseInt(page, 10) || 0 };
+    const q = {
+      text: text.trim(),
+      page: parseInt(page, 10) || 0,
+      note: note.trim(),
+      tags: parseTags(tagInput),
+      color,
+    };
     onUpdate({ quotes: [...quotes, q] });
     setText('');
     setPage('');
+    setNote('');
+    setTagInput('');
+    setColor(DEFAULT_HIGHLIGHT);
   };
 
   const removeQuote = (idx) => onUpdate({ quotes: quotes.filter((_, i) => i !== idx) });
@@ -214,49 +227,87 @@ function QuotesView({ book, onUpdate }) {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type a favorite quote…"
+          placeholder="Type a passage to highlight…"
           className="w-full min-h-[80px] p-3 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 font-serif italic"
           style={{ backgroundColor: '#fff', borderColor: LINE, color: INK }}
         />
-        <div className="flex items-center gap-3 mt-3">
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Your note on this passage (optional)"
+          className="w-full mt-2 p-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm font-serif"
+          style={{ backgroundColor: '#fff', borderColor: LINE, color: INK }}
+        />
+        <div className="flex flex-wrap items-center gap-3 mt-3">
           <input
             type="number"
             value={page}
             onChange={(e) => setPage(e.target.value)}
             placeholder="Page #"
-            className="w-28 border rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
+            className="w-24 border rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
             style={{ backgroundColor: '#fff', borderColor: LINE, color: INK }}
           />
+          <input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            placeholder="Tags, comma separated"
+            className="flex-1 min-w-[140px] border rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
+            style={{ backgroundColor: '#fff', borderColor: LINE, color: INK }}
+          />
+          {/* highlight color */}
+          <div className="flex items-center gap-1.5">
+            {HIGHLIGHTS.map((h) => (
+              <button
+                key={h.key}
+                onClick={() => setColor(h.key)}
+                aria-label={h.label}
+                title={h.label}
+                className={`w-6 h-6 rounded-full transition-transform ${color === h.key ? 'ring-2 ring-offset-1 scale-110' : 'hover:scale-105'}`}
+                style={{ backgroundColor: h.bg, ...(color === h.key ? { boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${h.accent}` } : {}) }}
+              />
+            ))}
+          </div>
           <button
             onClick={addQuote}
             disabled={!text.trim()}
             className="ml-auto bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm transition-colors"
           >
-            <Plus size={16} /> Save quote
+            <Plus size={16} /> Save highlight
           </button>
         </div>
       </div>
 
       <div className="space-y-3">
         {quotes.length === 0 && (
-          <p className="text-center italic py-6" style={{ color: MUTE }}>No saved quotes yet.</p>
+          <p className="text-center italic py-6" style={{ color: MUTE }}>No highlights yet.</p>
         )}
-        {quotes.map((q, i) => (
-          <div key={i} className="relative border rounded-2xl p-5 pl-6 shadow-sm group" style={{ backgroundColor: CARD, borderColor: LINE }}>
-            <div className="absolute left-0 top-4 bottom-4 w-1 rounded-full" style={{ backgroundColor: '#DDB07A' }} />
-            <p className="font-serif italic text-lg leading-relaxed" style={{ color: INK }}>“{q.text}”</p>
-            <div className="flex items-center justify-between mt-2">
-              {q.page ? <span className="text-xs" style={{ color: MUTE }}>page {q.page}</span> : <span />}
-              <button
-                onClick={() => removeQuote(i)}
-                className="text-stone-300 hover:text-status-dnf transition-colors opacity-0 group-hover:opacity-100"
-                aria-label="Delete quote"
-              >
-                <Trash2 size={15} />
-              </button>
+        {quotes.map((q, i) => {
+          const hl = highlight(q.color);
+          return (
+            <div key={i} className="relative border rounded-2xl p-5 pl-6 shadow-sm group" style={{ backgroundColor: CARD, borderColor: LINE }}>
+              <div className="absolute left-0 top-4 bottom-4 w-1.5 rounded-full" style={{ backgroundColor: hl.accent }} />
+              <p className="font-serif italic text-lg leading-relaxed" style={{ color: INK, backgroundColor: q.text ? `${hl.bg}66` : 'transparent', boxDecorationBreak: 'clone', padding: '0 2px' }}>
+                “{q.text}”
+              </p>
+              {q.note && <p className="mt-2 text-sm font-serif" style={{ color: MUTE }}>{q.note}</p>}
+              <div className="flex items-center justify-between gap-3 mt-3">
+                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                  {q.page ? <span className="text-xs" style={{ color: MUTE }}>page {q.page}</span> : null}
+                  {(q.tags || []).map((t) => (
+                    <span key={t} className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ backgroundColor: hl.bg, color: hl.accent }}>#{t}</span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => removeQuote(i)}
+                  className="shrink-0 text-stone-300 hover:text-status-dnf transition-colors opacity-0 group-hover:opacity-100"
+                  aria-label="Delete highlight"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

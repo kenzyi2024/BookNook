@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Quote, Search, Copy, Check, BookOpen, Feather, Share2 } from 'lucide-react';
+import { Quote, Search, Copy, Check, BookOpen, Feather, Share2, Download } from 'lucide-react';
 import { useToast } from '../ui/ToastProvider';
 import ReflectionCard from '../reflections/ReflectionCard';
 import ShareCard from '../book/ShareCard';
+import { highlight } from '../../lib/highlights';
+import { annotationsToMarkdown, downloadMarkdown } from '../../lib/exportMd';
 
 /**
  * The Commonplace Book — the reader's own writing about their books, gathered in
@@ -15,6 +17,13 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
   const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(null);
   const [shareQuote, setShareQuote] = useState(null);
+  const [tagFilter, setTagFilter] = useState('');
+
+  const allTags = useMemo(() => {
+    const set = new Set();
+    books.forEach((b) => (b.quotes || []).forEach((qt) => (qt.tags || []).forEach((t) => set.add(t))));
+    return [...set].sort();
+  }, [books]);
 
   // Every saved quote, with its source book attached.
   const quotes = useMemo(() => {
@@ -39,9 +48,11 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
   }, [books]);
 
   const q = query.trim().toLowerCase();
-  const shownQuotes = q
-    ? quotes.filter((it) => `${it.text} ${it.book.title} ${it.book.author}`.toLowerCase().includes(q))
-    : quotes;
+  const shownQuotes = quotes.filter((it) => {
+    if (tagFilter && !(it.tags || []).includes(tagFilter)) return false;
+    if (!q) return true;
+    return `${it.text} ${it.note || ''} ${(it.tags || []).join(' ')} ${it.book.title} ${it.book.author}`.toLowerCase().includes(q);
+  });
   const shownReflections = q
     ? reflections.filter((it) =>
         `${it.answer.text} ${(it.answer.followUps || []).map((f) => f.text).join(' ')} ${it.book.title} ${it.book.author}`
@@ -114,24 +125,66 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
         )}
       </div>
 
+      {view === 'quotes' && quotes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-5">
+          {allTags.length > 0 && (
+            <>
+              <button
+                onClick={() => setTagFilter('')}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!tagFilter ? 'bg-brand-500 text-white' : 'bg-surface border border-stone-200 text-stone-600 hover:border-brand-300'}`}
+              >
+                All
+              </button>
+              {allTags.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTagFilter((cur) => (cur === t ? '' : t))}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${tagFilter === t ? 'bg-brand-500 text-white' : 'bg-surface border border-stone-200 text-stone-600 hover:border-brand-300'}`}
+                >
+                  #{t}
+                </button>
+              ))}
+            </>
+          )}
+          <button
+            onClick={() => downloadMarkdown(annotationsToMarkdown(books), 'booknook-highlights.md')}
+            className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 hover:bg-brand-100 rounded-full px-4 py-1.5 transition-colors"
+          >
+            <Download size={14} /> Export .md
+          </button>
+        </div>
+      )}
+
       {view === 'quotes' ? (
         quotes.length === 0 ? (
           <EmptyState
             icon={<Quote size={40} className="mx-auto text-stone-300 mb-4" />}
             title="No quotes yet"
-            body="Open a book, go to its Journal, and save a line under Quotes. Everything you keep will collect here."
+            body="Open a book, go to its Journal, and save a highlight under Quotes. Everything you keep will collect here."
           />
         ) : shownQuotes.length === 0 ? (
           <p className="text-center text-stone-400 italic py-16">No quotes match “{query}”.</p>
         ) : (
           <div className="columns-1 md:columns-2 xl:columns-3 gap-5 [column-fill:_balance]">
-            {shownQuotes.map((item) => (
+            {shownQuotes.map((item) => {
+              const hl = highlight(item.color);
+              return (
               <div
                 key={item.key}
                 className="group relative mb-5 break-inside-avoid bg-surface border border-stone-200/70 rounded-2xl shadow-sm p-5 pl-6 transition-shadow hover:shadow-md"
               >
-                <div className="absolute left-0 top-5 bottom-5 w-1 rounded-full bg-brand-300" />
-                <p className="font-display italic text-lg leading-relaxed text-ink">“{item.text}”</p>
+                <div className="absolute left-0 top-5 bottom-5 w-1.5 rounded-full" style={{ backgroundColor: hl.accent }} />
+                <p className="font-display italic text-lg leading-relaxed text-ink">
+                  <span style={{ backgroundColor: `${hl.bg}66`, boxDecorationBreak: 'clone', WebkitBoxDecorationBreak: 'clone', padding: '0 2px' }}>“{item.text}”</span>
+                </p>
+                {item.note && <p className="mt-2.5 text-sm text-stone-500 leading-relaxed">{item.note}</p>}
+                {(item.tags || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {item.tags.map((t) => (
+                      <button key={t} onClick={() => setTagFilter(t)} className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ backgroundColor: hl.bg, color: hl.accent }}>#{t}</button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-stone-100">
                   <button onClick={() => onSelect(item.book)} className="flex items-center gap-2 min-w-0 text-left group/src" title={`Open ${item.book.title}`}>
                     <BookOpen size={15} className="text-brand-500 shrink-0" />
@@ -158,7 +211,8 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )
       ) : reflections.length === 0 ? (

@@ -154,6 +154,44 @@ body {
   50% { filter: brightness(1.4); }
 }
 
+/* Rendered light-markdown (AI analysis, motif synthesis, etc.) — reads like a
+   clean document, not raw markdown. */
+.md-content > :first-child { margin-top: 0; }
+.md-content > :last-child { margin-bottom: 0; }
+.md-content h3 {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--color-brand-700);
+  margin: 1.25em 0 0.4em;
+}
+.md-content h4 {
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--color-ink);
+  margin: 1.1em 0 0.35em;
+}
+.md-content h5 { font-weight: 600; color: var(--color-ink); margin: 0.9em 0 0.3em; }
+.md-content p { margin: 0 0 0.7em; }
+.md-content ul, .md-content ol { margin: 0.3em 0 0.85em; padding-left: 1.35em; }
+.md-content ul { list-style: disc; }
+.md-content ol { list-style: decimal; }
+.md-content li { margin: 0.28em 0; padding-left: 0.15em; }
+.md-content li::marker { color: var(--color-brand-400); }
+.md-content strong { font-weight: 700; color: var(--color-ink); }
+.md-content code {
+  background: var(--color-stone-100);
+  padding: 0.05em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.md-content hr {
+  border: 0;
+  border-top: 1px solid var(--color-stone-200);
+  margin: 1.1em auto;
+  width: 80%;
+}
+
 /*
   Shelving animation — a book settles onto the shelf as it appears (on load, and
   when a new book is added). `backwards` fill holds it hidden during its stagger

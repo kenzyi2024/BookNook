@@ -40,7 +40,7 @@ export function extractThemes(analysis = '') {
   const lines = analysis.split(/\r?\n/);
 
   // Strip markdown + any leading bullet/number so we can inspect a line's text.
-  const clean = (s) => stripMd(s).replace(/^[\s\-*••\d.)]+/, '').trim();
+  const clean = (s) => stripMd(s).replace(/^[#\s\-*••\d.)]+/, '').trim();
   // A line that's really a *section header* (Themes / Motifs / Question / etc.) —
   // never a theme itself.
   const isSection = (s) =>

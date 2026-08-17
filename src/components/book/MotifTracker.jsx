@@ -141,7 +141,7 @@ export default function MotifTracker({ book, onUpdate }) {
                 <Sparkles size={16} className="text-brand-500" /> Your motifs, woven together
               </h4>
               <div
-                className="prose-sm max-w-none text-ink leading-relaxed [&_strong]:text-ink [&_p]:mb-3"
+                className="md-content text-ink leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(book.motifSynthesis) }}
               />
             </div>

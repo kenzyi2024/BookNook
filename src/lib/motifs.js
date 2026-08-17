@@ -20,7 +20,7 @@ export function extractMotifs(analysis = '') {
   if (!analysis) return [];
   const lines = analysis.split(/\r?\n/);
 
-  const clean = (s) => stripMd(s).replace(/^[\s\-*••\d.)]+/, '').trim();
+  const clean = (s) => stripMd(s).replace(/^[#\s\-*••\d.)]+/, '').trim();
   const isSection = (s) =>
     /^(the\s+)?(major|key|central|main|core)?\s*(themes?|motifs?|symbols?|imagery|questions?|a\s+question|characters?|summary|analysis|takeaways?)\b/i.test(clean(s));
   const isMotifHeader = (s) => {

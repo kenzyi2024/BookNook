@@ -33,7 +33,7 @@ export default function Typewriter({ text = '', className = '' }) {
 
   return (
     <div className={className}>
-      <span dangerouslySetInnerHTML={{ __html: renderMarkdown(shown) }} />
+      <div className="md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(shown) }} />
       {!done && <span className="bn-caret text-brand-500 font-bold">▍</span>}
     </div>
   );

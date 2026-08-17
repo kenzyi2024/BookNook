@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
-import { X, Plus, Search } from 'lucide-react';
-import { CW_CATEGORIES, LEVELS } from '../../lib/contentWarnings';
+import { X, Plus, Search, Sparkles, Loader2 } from 'lucide-react';
+import { CW_CATEGORIES, LEVELS, parseWarnings } from '../../lib/contentWarnings';
+import { useApi } from '../../hooks/useApi';
+import { useToast } from '../ui/ToastProvider';
 
 /**
  * Editor for a book's content warnings. Each category can be flagged at one of
- * three intensities (or left off). The reader can also add a custom one.
+ * three intensities (or left off). The reader can also add a custom one, or let
+ * AI suggest a starting set to review.
  */
-export default function ContentWarningsModal({ current = [], onSave, onClose }) {
+export default function ContentWarningsModal({ book, current = [], onSave, onClose }) {
+  const api = useApi();
+  const toast = useToast();
+  const [aiBusy, setAiBusy] = useState(false);
   // name -> level
   const [selected, setSelected] = useState(() => {
     const m = {};
@@ -43,6 +49,31 @@ export default function ContentWarningsModal({ current = [], onSave, onClose }) 
     setQuery('');
   };
 
+  const suggest = async () => {
+    if (!book) return;
+    setAiBusy(true);
+    try {
+      const prompt =
+        `List the content warnings a reader might want to know about for "${book.title}" by ${book.author}. ` +
+        `Only include ones actually present in the book. For each, use EXACTLY this format, separated by a line of ---:\n` +
+        `Name: <category>\nLevel: <minor, moderate, or graphic>\n---\n` +
+        `Stick to widely recognized warnings. If there are genuinely none, reply with just: none`;
+      const text = await api.generateAI(prompt);
+      const parsed = parseWarnings(text);
+      if (!parsed.length) { toast.success('No notable content warnings suggested.'); return; }
+      setSelected((prev) => {
+        const next = { ...prev };
+        parsed.forEach((p) => { if (!next[p.name]) next[p.name] = p.level; });
+        return next;
+      });
+      toast.success(`Suggested ${parsed.length} — review the levels and save.`);
+    } catch (err) {
+      toast.error(err.message || 'AI features need a free account.');
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const save = () => {
     const list = Object.entries(selected).map(([name, lvl]) => ({ name, level: lvl }));
     onSave(list);
@@ -63,6 +94,13 @@ export default function ContentWarningsModal({ current = [], onSave, onClose }) 
           <p className="text-sm text-stone-500 mb-3">
             Flag anything future readers might want to know about, and how intense it is. Left off = not present.
           </p>
+          <button
+            onClick={suggest}
+            disabled={aiBusy}
+            className="w-full mb-3 inline-flex items-center justify-center gap-2 bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 disabled:opacity-50 font-semibold text-sm px-4 py-2 rounded-full transition-colors"
+          >
+            {aiBusy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />} Suggest with AI
+          </button>
           <div className="relative mb-3">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input

@@ -269,7 +269,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
               </button>
             </div>
             {cwCount === 0 ? (
-              <p className="text-sm text-stone-400 mt-1">None flagged.</p>
+              <p className="text-sm text-stone-400 mt-1">None flagged — add your own or suggest with AI.</p>
             ) : cwRevealed ? (
               <div className="flex flex-wrap gap-2 mt-2">
                 {[...(book.contentWarnings || [])]
@@ -318,6 +318,7 @@ export default function BookDetailView({ book, onUpdate, onBack, onDelete, onRef
 
       {cwOpen && (
         <ContentWarningsModal
+          book={book}
           current={book.contentWarnings || []}
           onSave={(list) => { onUpdate({ contentWarnings: list }); if (list.length) setCwRevealed(true); }}
           onClose={() => setCwOpen(false)}

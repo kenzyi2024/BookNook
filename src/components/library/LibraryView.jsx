@@ -51,8 +51,8 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
   const [showTBR, setShowTBR] = useState(false);
 
   const wantToRead = books.filter((b) => b.status === 'want_to_read');
-  const saveTBR = (ordered) => {
-    ordered.forEach((b, i) => { if (b.tbrRank !== i && onUpdateBook) onUpdateBook(b._id, { tbrRank: i }); });
+  const saveTBR = (updates) => {
+    updates.forEach((u) => onUpdateBook && onUpdateBook(u.id, { tbrMonth: u.tbrMonth, tbrRank: u.tbrRank }));
     setFilter('want_to_read');
     setSort('tbr');
   };

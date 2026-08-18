@@ -1,29 +1,62 @@
 import { useState } from 'react';
-import { X, ChevronUp, ChevronDown, ListOrdered } from 'lucide-react';
+import { X, ListOrdered, GripVertical, CalendarDays } from 'lucide-react';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const monthLabel = (key) => {
+  if (!key) return 'Unscheduled';
+  const [y, m] = key.split('-').map(Number);
+  return `${MONTH_NAMES[m - 1]} ${y}`;
+};
 
 /**
- * Plan your to-be-read pile: reorder the "Want to Read" books into the order you
- * actually intend to read them. Saving writes a tbrRank to each so the shelf can
- * sort by "TBR order".
+ * Plan your TBR as a board: drag books between an "Unscheduled" pile and monthly
+ * buckets, and drag to reorder within a month. Saving writes each book's planned
+ * month + its order.
  */
 export default function TBRPlanner({ books, onSave, onClose }) {
-  // Start from current tbr order (rank asc, then recently added).
-  const initial = [...books].sort(
-    (a, b) => (a.tbrRank ?? Infinity) - (b.tbrRank ?? Infinity) ||
-      new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-  );
-  const [order, setOrder] = useState(initial);
+  // Build the list of buckets: Unscheduled, this month + next 5, plus any months
+  // already used by the books.
+  const now = new Date();
+  const monthKeys = [];
+  for (let i = 0; i < 6; i++) monthKeys.push(ym(new Date(now.getFullYear(), now.getMonth() + i, 1)));
+  books.forEach((b) => { if (b.tbrMonth && !monthKeys.includes(b.tbrMonth)) monthKeys.push(b.tbrMonth); });
+  monthKeys.sort();
+  const buckets = ['', ...monthKeys];
 
-  const move = (i, dir) => {
-    const j = i + dir;
-    if (j < 0 || j >= order.length) return;
-    const next = order.slice();
-    [next[i], next[j]] = [next[j], next[i]];
-    setOrder(next);
+  // items: ordered [{ id, bucket }]; books resolved by id.
+  const byId = Object.fromEntries(books.map((b) => [b._id, b]));
+  const [items, setItems] = useState(() =>
+    [...books]
+      .sort((a, b) => (a.tbrMonth || '').localeCompare(b.tbrMonth || '') || (a.tbrRank ?? Infinity) - (b.tbrRank ?? Infinity))
+      .map((b) => ({ id: b._id, bucket: b.tbrMonth || '' }))
+  );
+  const [dragId, setDragId] = useState(null);
+  const [overBucket, setOverBucket] = useState(null);
+
+  const move = (id, bucket, beforeId) => {
+    setItems((prev) => {
+      const rest = prev.filter((i) => i.id !== id);
+      const item = { id, bucket };
+      if (beforeId != null) {
+        const idx = rest.findIndex((i) => i.id === beforeId);
+        rest.splice(idx < 0 ? rest.length : idx, 0, item);
+      } else {
+        rest.push(item);
+      }
+      return rest;
+    });
   };
 
   const save = () => {
-    onSave(order);
+    const updates = [];
+    buckets.forEach((bucket) => {
+      items.filter((i) => i.bucket === bucket).forEach((i, idx) => {
+        const b = byId[i.id];
+        if (b && (b.tbrMonth !== bucket || b.tbrRank !== idx)) updates.push({ id: i.id, tbrMonth: bucket, tbrRank: idx });
+      });
+    });
+    onSave(updates);
     onClose();
   };
 
@@ -37,34 +70,66 @@ export default function TBRPlanner({ books, onSave, onClose }) {
           <button onClick={onClose} className="text-stone-400 hover:text-ink" aria-label="Close"><X size={20} /></button>
         </div>
 
-        {order.length === 0 ? (
+        {books.length === 0 ? (
           <p className="px-6 py-10 text-center text-stone-500">Nothing on your Want to Read shelf yet.</p>
         ) : (
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-            {order.map((b, i) => (
-              <div key={b._id} className="flex items-center gap-3 bg-stone-50 rounded-xl px-3 py-2">
-                <span className="w-6 text-center text-sm font-bold text-brand-500 shrink-0">{i + 1}</span>
-                {b.coverUrl ? (
-                  <img src={b.coverUrl} alt="" className="w-8 h-11 object-cover rounded shadow-sm shrink-0" />
-                ) : (
-                  <span className="w-8 h-11 rounded bg-brand-200 shrink-0" />
-                )}
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-semibold text-ink truncate">{b.title}</span>
-                  <span className="block text-xs text-stone-400 truncate">{b.author}</span>
-                </span>
-                <div className="flex flex-col shrink-0">
-                  <button onClick={() => move(i, -1)} disabled={i === 0} className="text-stone-400 hover:text-brand-600 disabled:opacity-30 p-0.5" aria-label="Move up"><ChevronUp size={16} /></button>
-                  <button onClick={() => move(i, 1)} disabled={i === order.length - 1} className="text-stone-400 hover:text-brand-600 disabled:opacity-30 p-0.5" aria-label="Move down"><ChevronDown size={16} /></button>
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+            <p className="text-xs text-stone-400 px-1">Drag books to reorder, or into a month to plan when you&rsquo;ll read them.</p>
+            {buckets.map((bucket) => {
+              const inBucket = items.filter((i) => i.bucket === bucket);
+              const isMonth = !!bucket;
+              return (
+                <div
+                  key={bucket || 'unscheduled'}
+                  onDragOver={(e) => { e.preventDefault(); setOverBucket(bucket); }}
+                  onDrop={(e) => { e.preventDefault(); if (dragId) move(dragId, bucket, null); setDragId(null); setOverBucket(null); }}
+                  className={`rounded-2xl border p-2.5 transition-colors ${overBucket === bucket ? 'border-brand-400 bg-brand-50/60' : 'border-stone-200/70 bg-stone-50/50'}`}
+                >
+                  <div className="flex items-center gap-1.5 px-1 pb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
+                    {isMonth ? <CalendarDays size={13} className="text-brand-500" /> : null}
+                    {monthLabel(bucket)}
+                    <span className="text-stone-300 font-normal normal-case">· {inBucket.length}</span>
+                  </div>
+                  <div className="space-y-1.5 min-h-[8px]">
+                    {inBucket.map((it) => {
+                      const b = byId[it.id];
+                      if (!b) return null;
+                      return (
+                        <div
+                          key={it.id}
+                          draggable
+                          onDragStart={() => setDragId(it.id)}
+                          onDragEnd={() => { setDragId(null); setOverBucket(null); }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragId && dragId !== it.id) move(dragId, bucket, it.id); setDragId(null); setOverBucket(null); }}
+                          className={`flex items-center gap-2.5 bg-surface border border-stone-200 rounded-xl px-2.5 py-2 shadow-sm cursor-grab active:cursor-grabbing ${dragId === it.id ? 'opacity-40' : ''}`}
+                        >
+                          <GripVertical size={15} className="text-stone-300 shrink-0" />
+                          {b.coverUrl ? (
+                            <img src={b.coverUrl} alt="" className="w-7 h-10 object-cover rounded shadow-sm shrink-0" />
+                          ) : (
+                            <span className="w-7 h-10 rounded bg-brand-200 shrink-0" />
+                          )}
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-semibold text-ink truncate">{b.title}</span>
+                            <span className="block text-xs text-stone-400 truncate">{b.author}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {inBucket.length === 0 && (
+                      <p className="text-xs text-stone-300 italic px-1 py-1">Drop books here</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         <div className="px-6 py-4 border-t border-stone-100 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-full text-sm font-semibold text-stone-500 hover:bg-stone-100 transition-colors">Cancel</button>
-          <button onClick={save} disabled={order.length === 0} className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold text-sm px-5 py-2 rounded-full transition-colors">Save order</button>
+          <button onClick={save} disabled={books.length === 0} className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold text-sm px-5 py-2 rounded-full transition-colors">Save plan</button>
         </div>
       </div>
     </div>

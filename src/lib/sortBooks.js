@@ -11,8 +11,9 @@ export const SORT_OPTIONS = [
   { id: 'tbr', label: 'TBR order' },
 ];
 
-/** Sort key for TBR: explicit rank first (asc), then recently added. */
-const tbrKey = (b) => (b.tbrRank == null ? Infinity : b.tbrRank);
+/** TBR ordering: by planned month (unscheduled last), then rank within it. */
+const tbrMonthKey = (b) => b.tbrMonth || '9999-99';
+const tbrRankKey = (b) => (b.tbrRank == null ? Infinity : b.tbrRank);
 
 function parseRgb(s) {
   const m = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(s || '');
@@ -72,7 +73,9 @@ export function sortBooks(list, key) {
     case 'pages':
       return a.sort((x, y) => (y.totalPages || 0) - (x.totalPages || 0));
     case 'tbr':
-      return a.sort((x, y) => tbrKey(x) - tbrKey(y) || ts(y) - ts(x));
+      return a.sort((x, y) =>
+        tbrMonthKey(x).localeCompare(tbrMonthKey(y)) || tbrRankKey(x) - tbrRankKey(y) || ts(y) - ts(x)
+      );
     case 'added_desc':
     default:
       return a.sort((x, y) => ts(y) - ts(x));

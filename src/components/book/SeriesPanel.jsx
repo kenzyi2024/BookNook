@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Library, Check, X, Pencil } from 'lucide-react';
+import { Library, Check, X, Pencil, Sparkles, Loader2 } from 'lucide-react';
+import { useApi } from '../../hooks/useApi';
+import { useToast } from '../ui/ToastProvider';
 
 const STATUS_DOT = {
   read: '#4c9a76',
@@ -13,13 +15,42 @@ const STATUS_DOT = {
  * in the same series (in reading order) so a reader can see where they are.
  */
 export default function SeriesPanel({ book, books, onUpdate, onOpenBook }) {
+  const api = useApi();
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(book.series || '');
   const [index, setIndex] = useState(book.seriesIndex != null ? String(book.seriesIndex) : '');
+  const [busy, setBusy] = useState(false);
 
   const save = () => {
     onUpdate({ series: name.trim(), seriesIndex: index.trim() === '' ? null : Number(index) });
     setEditing(false);
+  };
+
+  const findSeries = async () => {
+    setBusy(true);
+    try {
+      const prompt =
+        `Is the book "${book.title}" by ${book.author} part of a book series? ` +
+        `If yes, reply EXACTLY:\nSeries: <series name>\nNumber: <book number as a digit>\n` +
+        `If it is a standalone book, reply with just: none`;
+      const text = await api.generateAI(prompt);
+      if (/^\s*none[.!]?\s*$/i.test(text.trim())) {
+        toast.success('This looks like a standalone book.');
+        return;
+      }
+      const sName = (text.match(/Series\s*:\s*(.+)/i)?.[1] || '').replace(/\*+/g, '').trim();
+      const numRaw = (text.match(/Number\s*:\s*([\d.]+)/i)?.[1] || '').trim();
+      if (!sName) { toast.error("Couldn't determine the series."); return; }
+      setName(sName);
+      setIndex(numRaw);
+      setEditing(true);
+      toast.success('Found it — review and save.');
+    } catch (err) {
+      toast.error(err.message || 'AI features need a free account.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const siblings = book.series
@@ -35,9 +66,14 @@ export default function SeriesPanel({ book, books, onUpdate, onOpenBook }) {
           <Library size={14} /> Series
         </span>
         {!editing && (
-          <button onClick={() => setEditing(true)} className="text-xs font-semibold text-stone-400 hover:text-brand-600 ml-auto inline-flex items-center gap-1">
-            {book.series ? <><Pencil size={12} /> Edit</> : '+ Add to a series'}
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <button onClick={findSeries} disabled={busy} className="text-xs font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-1 disabled:opacity-50">
+              {busy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Find with AI
+            </button>
+            <button onClick={() => setEditing(true)} className="text-xs font-semibold text-stone-400 hover:text-brand-600 inline-flex items-center gap-1">
+              {book.series ? <><Pencil size={12} /> Edit</> : '+ Add'}
+            </button>
+          </div>
         )}
       </div>
 

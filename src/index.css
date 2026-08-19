@@ -216,6 +216,23 @@ body {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Candlelight dust motes (dark mode). */
+.bn-mote {
+  position: absolute;
+  bottom: -10px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #f7e3b8 0%, rgba(247, 227, 184, 0) 70%);
+  animation-name: bn-mote-float;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes bn-mote-float {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translate(var(--mote-drift, 0), -102vh); opacity: 0; }
+}
+
 /* --- Book-flip loader (replaces spinners) --- */
 @keyframes bn-page-flip {
   0%        { transform: rotateY(0deg); }

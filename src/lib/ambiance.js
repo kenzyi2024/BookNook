@@ -4,9 +4,10 @@
  */
 export const AMBIANCES = [
   { id: 'rain', label: 'Rain' },
-  { id: 'brown', label: 'Brown noise' },
-  { id: 'cafe', label: 'Café hum' },
+  { id: 'fire', label: 'Fireplace' },
   { id: 'ocean', label: 'Ocean' },
+  { id: 'cafe', label: 'Café hum' },
+  { id: 'brown', label: 'Deep hush' },
 ];
 
 function makeNoiseBuffer(ctx, seconds = 2) {
@@ -30,6 +31,7 @@ export function createAmbiance() {
   let gain = null;
   let lfo = null;
   let lfoGain = null;
+  let crackleTimer = null;
   let current = null;
   let volume = 0.5;
 
@@ -43,8 +45,27 @@ export function createAmbiance() {
   const stop = () => {
     try { src && src.stop(); } catch { /* already stopped */ }
     try { lfo && lfo.stop(); } catch { /* noop */ }
+    if (crackleTimer) { clearInterval(crackleTimer); crackleTimer = null; }
     src = filter = gain = lfo = lfoGain = null;
     current = null;
+  };
+
+  // A single short "pop" of filtered noise, for the fireplace crackle.
+  const crackle = () => {
+    if (!ctx) return;
+    const frames = Math.floor(ctx.sampleRate * 0.05);
+    const buf = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < frames; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / frames, 3);
+    const b = ctx.createBufferSource();
+    b.buffer = buf;
+    const g = ctx.createGain();
+    g.gain.value = volume * (0.25 + Math.random() * 0.5);
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.frequency.value = 1200 + Math.random() * 2200;
+    b.connect(f).connect(g).connect(ctx.destination);
+    b.start();
   };
 
   const play = (id) => {
@@ -63,6 +84,10 @@ export function createAmbiance() {
     if (id === 'rain') {
       filter.type = 'lowpass';
       filter.frequency.value = 1400;
+    } else if (id === 'fire') {
+      filter.type = 'lowpass';
+      filter.frequency.value = 620;
+      crackleTimer = setInterval(() => { if (Math.random() < 0.6) crackle(); }, 170);
     } else if (id === 'brown') {
       filter.type = 'lowpass';
       filter.frequency.value = 500;

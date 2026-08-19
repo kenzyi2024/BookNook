@@ -7,6 +7,8 @@ import MetricsView from './components/metrics/MetricsView';
 import DiscoverView from './components/discover/DiscoverView';
 import CommonplaceBook from './components/quotes/CommonplaceBook';
 import ReflectionsPanel from './components/reflections/ReflectionsPanel';
+import AmbientPlayer from './components/ambient/AmbientPlayer';
+import DustMotes from './components/ambient/DustMotes';
 import { dueReflections, currentPrompt } from './lib/reflections';
 import { Feather, X } from 'lucide-react';
 import BookDetailView from './components/book/BookDetailView';
@@ -204,6 +206,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-paper text-ink font-sans selection:bg-brand-200">
+      <DustMotes />
+      <AmbientPlayer />
       <Navbar
         activeTab={activeTab}
         onTab={goTo}

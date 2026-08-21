@@ -410,12 +410,9 @@ function EmptyLibrary({ suggestBlock, onLoadSample }) {
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
         {onLoadSample && (
-          <button
-            onClick={onLoadSample}
-            className="inline-flex items-center gap-2 text-sm font-semibold bg-brand-500 text-white px-4 py-2 rounded-full hover:bg-brand-600 transition-colors shadow-sm"
-          >
+          <Button onClick={onLoadSample}>
             <Wand2 size={16} /> Load sample library
-          </button>
+          </Button>
         )}
         {suggestBlock('popular')}
         {suggestBlock('history')}

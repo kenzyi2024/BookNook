@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Library, BarChart2, LogOut, KeyRound, Settings, Moon, Sun, Compass, Quote } from 'lucide-react';
+import { Plus, Library, BarChart2, LogOut, KeyRound, Settings, Moon, Sun, Compass, Quote, User } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 import ChangePasswordModal from '../auth/ChangePasswordModal';
 import AccountModal from '../auth/AccountModal';
@@ -25,7 +25,6 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout, onTogg
   }, []);
 
   const label = user?.username || user?.email || 'Account';
-  const initial = (user?.username || user?.email || '?').charAt(0).toUpperCase();
 
   const tabs = [
     { id: 'library', label: 'Library', icon: <Library size={16} /> },
@@ -83,7 +82,7 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout, onTogg
               {user?.profilePicture ? (
                 <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                initial
+                <User size={20} strokeWidth={2.25} />
               )}
             </button>
 

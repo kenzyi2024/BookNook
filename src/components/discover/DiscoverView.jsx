@@ -245,13 +245,9 @@ export default function DiscoverView({ books, onAdd }) {
             className="w-full bg-surface border border-stone-300 rounded-full pl-11 pr-4 py-3 text-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading || !query.trim()}
-          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold px-5 rounded-full flex items-center gap-2 transition-colors shrink-0"
-        >
+        <Button type="submit" size="lg" disabled={loading || !query.trim()} className="shrink-0">
           <Sparkles size={16} /> <span className="hidden sm:inline">Find books</span>
-        </button>
+        </Button>
       </form>
 
       {/* Because you loved … */}

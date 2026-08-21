@@ -6,6 +6,7 @@ import ShareCard from '../book/ShareCard';
 import { highlight } from '../../lib/highlights';
 import { annotationsToMarkdown, downloadMarkdown } from '../../lib/exportMd';
 import PageHeader from '../ui/PageHeader';
+import Chip from '../ui/Chip';
 
 /**
  * The Commonplace Book — the reader's own writing about their books, gathered in
@@ -126,20 +127,9 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
         <div className="flex flex-wrap items-center gap-2 mb-5">
           {allTags.length > 0 && (
             <>
-              <button
-                onClick={() => setTagFilter('')}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!tagFilter ? 'bg-brand-500 text-white' : 'bg-surface border border-stone-200 text-stone-600 hover:border-brand-300'}`}
-              >
-                All
-              </button>
+              <Chip active={!tagFilter} onClick={() => setTagFilter('')}>All</Chip>
               {allTags.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTagFilter((cur) => (cur === t ? '' : t))}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${tagFilter === t ? 'bg-brand-500 text-white' : 'bg-surface border border-stone-200 text-stone-600 hover:border-brand-300'}`}
-                >
-                  #{t}
-                </button>
+                <Chip key={t} active={tagFilter === t} onClick={() => setTagFilter((cur) => (cur === t ? '' : t))}>#{t}</Chip>
               ))}
             </>
           )}

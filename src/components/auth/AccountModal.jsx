@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Check, Loader2, Moon, Sun, Wand2, Feather } from 'lucide-react';
+import { X, Camera, Check, Loader2, Moon, Sun, Wand2, Feather, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../ui/ToastProvider';
@@ -19,7 +19,6 @@ export default function AccountModal({ onClose, onToggleSample, sampleLoaded, sa
   const [pic, setPic] = useState(user?.profilePicture || '');
   const [busy, setBusy] = useState(false);
 
-  const initial = (name || user?.email || '?').charAt(0).toUpperCase();
 
   const onPickFile = async (e) => {
     const file = e.target.files?.[0];
@@ -73,7 +72,7 @@ export default function AccountModal({ onClose, onToggleSample, sampleLoaded, sa
             {pic ? (
               <img src={pic} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="font-display font-bold text-2xl">{initial}</span>
+              <User size={30} strokeWidth={2.25} />
             )}
             <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
               <Camera size={20} />

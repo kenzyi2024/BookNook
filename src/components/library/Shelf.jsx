@@ -2,12 +2,13 @@ import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import BookSpine from './BookSpine';
 import FairyLights from './FairyLights';
+import PageHeader from '../ui/PageHeader';
 
 /**
  * A horizontal, scrollable shelf of book spines with a title, optional header
  * action (e.g. a filter), and a custom empty state.
  */
-export default function Shelf({ icon, title, action, books, onSelect, emptyState, wave, extras, onPersistCover }) {
+export default function Shelf({ icon, title, subtitle, action, books, onSelect, emptyState, wave, extras, onPersistCover }) {
   const rowRef = useRef(null);
 
   const scroll = (dir) => {
@@ -19,14 +20,8 @@ export default function Shelf({ icon, title, action, books, onSelect, emptyState
 
   return (
     <div className="relative group">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 pr-4 items-start">
-        <div className="flex items-center gap-3 relative z-20">
-          {icon}
-          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">
-            {title}
-          </h2>
-        </div>
-        {action && <div className="relative z-40">{action}</div>}
+      <div className="relative z-20">
+        <PageHeader icon={icon} title={title} subtitle={subtitle} action={action} />
       </div>
 
       {hasBooks && (

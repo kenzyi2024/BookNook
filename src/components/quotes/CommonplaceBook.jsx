@@ -5,6 +5,7 @@ import ReflectionCard from '../reflections/ReflectionCard';
 import ShareCard from '../book/ShareCard';
 import { highlight } from '../../lib/highlights';
 import { annotationsToMarkdown, downloadMarkdown } from '../../lib/exportMd';
+import PageHeader from '../ui/PageHeader';
 
 /**
  * The Commonplace Book — the reader's own writing about their books, gathered in
@@ -100,15 +101,11 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
 
   return (
     <div className="mt-8 mb-20 animate-in fade-in duration-500">
-      <div className="flex items-center gap-3 mb-4">
-        <Quote size={30} className="text-brand-600 drop-shadow-sm shrink-0" />
-        <div>
-          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">
-            Commonplace Book
-          </h2>
-          <p className="text-stone-500 text-sm mt-1">The lines you loved and the thoughts you kept, all in one place</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Quote}
+        title="Commonplace Book"
+        subtitle="The lines you loved and the thoughts you kept, all in one place"
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         {Segmented}

@@ -14,6 +14,7 @@ import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/ToastProvider';
 import Button from '../ui/Button';
+import PageHeader from '../ui/PageHeader';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -207,8 +208,9 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
             {shelves.map((s, i) => (
               <Shelf
                 key={s.id}
-                icon={<s.icon size={30} className="text-brand-600 drop-shadow-sm shrink-0" />}
+                icon={s.icon}
                 title={s.title}
+                subtitle={`${s.list.length} book${s.list.length === 1 ? '' : 's'}`}
                 books={s.list}
                 onSelect={onSelect}
                 onPersistCover={persistCover}
@@ -332,21 +334,17 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
       </div>
 
       {/* Library title + Up Next */}
-      <div className="relative z-20 flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <Library size={30} className="text-brand-600 drop-shadow-sm shrink-0" />
-          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm truncate">
-            {filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
-          </h2>
-        </div>
-        <Button
-          variant="soft"
-          onClick={() => getSuggestions('history')}
-          disabled={books.length === 0}
-          className="shrink-0"
-        >
-          <Sparkles size={15} /> Up Next
-        </Button>
+      <div className="relative z-20">
+        <PageHeader
+          icon={Library}
+          title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
+          subtitle={books.length ? `${books.length} book${books.length === 1 ? '' : 's'} on your shelves` : 'Build your shelves'}
+          action={
+            <Button variant="soft" onClick={() => getSuggestions('history')} disabled={books.length === 0}>
+              <Sparkles size={15} /> Up Next
+            </Button>
+          }
+        />
       </div>
 
       {/* Recommendations — their own space, below the title */}
@@ -400,15 +398,21 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
   );
 }
 
-function EmptyLibrary({ suggestBlock, inline, onLoadSample }) {
+function EmptyLibrary({ suggestBlock, onLoadSample }) {
   return (
-    <div className={`flex flex-col ${inline ? 'items-start' : 'items-center'} gap-3 ${inline ? '' : 'py-16 text-center'}`}>
-      <p className="text-stone-500">Your shelves are empty — add a book, load a sample library, or get a recommendation.</p>
-      <div className="flex flex-wrap gap-2">
+    <div className="rounded-3xl border border-stone-200/70 bg-surface shadow-sm px-6 py-14 text-center">
+      <span className="w-16 h-16 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mx-auto mb-4">
+        <Library size={30} className="text-brand-400" />
+      </span>
+      <h3 className="font-display font-semibold text-lg text-ink">Your shelves are waiting</h3>
+      <p className="text-stone-500 mt-1 max-w-md mx-auto">
+        Add a book with the button up top, explore a recommendation, or load a sample library to see BookNook in action.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
         {onLoadSample && (
           <button
             onClick={onLoadSample}
-            className="flex items-center gap-2 text-sm font-semibold bg-brand-500 text-white px-4 py-2 rounded-full hover:bg-brand-600 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 text-sm font-semibold bg-brand-500 text-white px-4 py-2 rounded-full hover:bg-brand-600 transition-colors shadow-sm"
           >
             <Wand2 size={16} /> Load sample library
           </button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { resolveCover, needsPersist, markPersisted } from '../../lib/covers';
+import BookCover from '../ui/BookCover';
 
 // Small accent color per reading status, shown as a dot near the spine foot.
 const STATUS_DOT = {
@@ -137,18 +138,12 @@ export default function BookSpine({ book, onSelect, onPersistCover, index = 0 })
             className="w-52 p-3 bg-stone-900 text-white text-xs rounded-lg shadow-xl pointer-events-none text-left"
           >
             <div className="flex gap-3">
-              {cover.coverUrl ? (
-                <img
-                  src={cover.coverUrl}
-                  alt={`${book.title} cover`}
-                  className="w-12 h-[72px] object-cover rounded shadow shrink-0"
-                />
-              ) : (
-                <div
-                  className="w-12 h-[72px] rounded shadow shrink-0"
-                  style={{ backgroundColor: shade }}
-                />
-              )}
+              <BookCover
+                book={{ coverUrl: cover.coverUrl, spineColor: cover.spineColor || shade, title: book.title }}
+                rounded="rounded"
+                className="w-12 h-[72px] shadow shrink-0"
+                showTitle={false}
+              />
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-sm leading-snug mb-0.5 line-clamp-2">{book.title}</p>
                 <p className="text-stone-300 truncate mb-2">{book.author}</p>

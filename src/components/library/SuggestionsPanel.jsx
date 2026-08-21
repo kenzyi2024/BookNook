@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Sparkles, RefreshCw, Plus } from 'lucide-react';
 import { randomSpine } from '../../lib/status';
 import { resolveCover } from '../../lib/covers';
+import BookCover from '../ui/BookCover';
 
 /**
  * A single recommendation. Resolves its own cover (so it shows on add and in the
@@ -87,16 +88,11 @@ function SuggestionRow({ s, onAdd }) {
               </p>
             </div>
             <div className="w-24 shrink-0">
-              {cover.coverUrl ? (
-                <img src={cover.coverUrl} alt="" className="w-24 h-36 object-cover rounded-lg shadow-md" />
-              ) : (
-                <div
-                  className="w-24 h-36 rounded-lg shadow-md flex items-center justify-center p-2 text-center"
-                  style={{ backgroundColor: cover.spineColor || 'var(--color-brand-300)' }}
-                >
-                  <span className="text-white text-[10px] font-bold leading-tight line-clamp-4">{s.title}</span>
-                </div>
-              )}
+              <BookCover
+                book={{ coverUrl: cover.coverUrl, spineColor: cover.spineColor, title: s.title }}
+                rounded="rounded-lg"
+                className="w-24 h-36 shadow-md"
+              />
             </div>
           </div>,
           document.body

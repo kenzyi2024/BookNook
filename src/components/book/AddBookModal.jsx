@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, Loader2, Book, ArrowLeft, Plus, BookOpen } from 'lucide-react';
+import { Search, Loader2, ArrowLeft, Plus, BookOpen } from 'lucide-react';
 import { SPINE_COLORS, randomSpine } from '../../lib/status';
 import { searchBooks } from '../../lib/bookSearch';
 import { GENRE_OPTIONS } from '../../lib/genres';
+import BookCover from '../ui/BookCover';
 
 /**
  * Add-book modal: search OpenLibrary, or add manually. Calls onAdd() which
@@ -119,13 +120,7 @@ export default function AddBookModal({ onClose, onAdd }) {
                         onClick={() => selectResult(r)}
                         className="w-full flex gap-4 p-3 hover:bg-brand-50 rounded-xl cursor-pointer border border-transparent hover:border-brand-100 transition-colors items-center text-left"
                       >
-                        {r.coverUrl ? (
-                          <img src={r.coverUrl} alt="" className="w-10 h-14 object-cover rounded shadow-sm" />
-                        ) : (
-                          <div className="w-10 h-14 bg-stone-200 rounded shadow-sm flex items-center justify-center">
-                            <Book size={16} className="text-stone-400" />
-                          </div>
-                        )}
+                        <BookCover book={{ coverUrl: r.coverUrl, title: r.title }} rounded="rounded" className="w-10 h-14 shadow-sm shrink-0" showTitle={false} />
                         <div className="min-w-0">
                           <p className="font-semibold text-ink truncate">{r.title}</p>
                           <p className="text-sm text-stone-500 truncate">{r.author}</p>

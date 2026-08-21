@@ -6,6 +6,7 @@ import CharacterMap from './CharacterMap';
 import MotifTracker from './MotifTracker';
 import ContentWarningsModal from './ContentWarningsModal';
 import SeriesPanel from './SeriesPanel';
+import BookCover from '../ui/BookCover';
 import { level as cwLevel, LEVEL_ORDER } from '../../lib/contentWarnings';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
@@ -25,7 +26,6 @@ import { useToast } from '../ui/ToastProvider';
 export default function BookDetailView({ book, books = [], onUpdate, onBack, onDelete, onReflect, onOpenBook }) {
   const [activeSubTab, setActiveSubTab] = useState('progress');
   const [coverUrl, setCoverUrl] = useState(book.coverUrl || '');
-  const [imgLoaded, setImgLoaded] = useState(false);
   const [ratingInput, setRatingInput] = useState(book.rating ? String(book.rating) : '');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -46,7 +46,6 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
   // TEMPORARY: force-repair a wrong stored cover. Remove with the button below.
   const refreshCoverNow = async () => {
     setRefreshing(true);
-    setImgLoaded(false);
     try {
       const r = await refreshCover(book.title, book.author);
       if (r.coverUrl) {
@@ -146,34 +145,11 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 mb-8 bg-surface p-6 rounded-3xl shadow-sm border border-stone-100">
-        <div
-          className={`w-48 h-72 rounded-md shadow-2xl flex-shrink-0 flex items-center justify-center p-4 relative overflow-hidden ${coverUrl ? '' : book.coverColor}`}
-          style={!coverUrl && book.spineColor ? { backgroundColor: book.spineColor } : undefined}
-        >
-          {coverUrl ? (
-            <>
-              {/* colored placeholder that pulses until the cover decodes, then fades out */}
-              <div
-                className={`absolute inset-0 z-10 ${book.coverColor} ${imgLoaded ? 'opacity-0' : 'animate-pulse'} transition-opacity duration-500`}
-                style={book.spineColor ? { backgroundColor: book.spineColor } : undefined}
-              />
-              <img
-                src={coverUrl}
-                alt={`Cover of ${book.title}`}
-                onLoad={() => setImgLoaded(true)}
-                onError={() => { setCoverUrl(''); setImgLoaded(false); }}
-                className={`absolute inset-0 w-full h-full object-cover z-20 transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-              />
-            </>
-          ) : (
-            <>
-              <div className="absolute left-0 top-0 bottom-0 w-3 bg-black/20" />
-              <h2 className="text-white text-xl font-display font-bold text-center z-10 leading-snug break-words drop-shadow-md">
-                {book.title}
-              </h2>
-            </>
-          )}
-        </div>
+        <BookCover
+          book={{ ...book, coverUrl: coverUrl || book.coverUrl }}
+          className="w-48 h-72 shadow-2xl flex-shrink-0"
+          titleClass="text-lg text-center px-3 pb-3"
+        />
 
         <div className="flex-1 flex flex-col justify-center">
           <h1 className="text-3xl md:text-4xl font-display font-bold text-ink mb-2 leading-tight">{book.title}</h1>

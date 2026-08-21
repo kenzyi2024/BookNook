@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, ListOrdered, GripVertical, CalendarDays } from 'lucide-react';
+import BookCover from '../ui/BookCover';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -105,11 +106,7 @@ export default function TBRPlanner({ books, onSave, onClose }) {
                           className={`flex items-center gap-2.5 bg-surface border border-stone-200 rounded-xl px-2.5 py-2 shadow-sm cursor-grab active:cursor-grabbing ${dragId === it.id ? 'opacity-40' : ''}`}
                         >
                           <GripVertical size={15} className="text-stone-300 shrink-0" />
-                          {b.coverUrl ? (
-                            <img src={b.coverUrl} alt="" className="w-7 h-10 object-cover rounded shadow-sm shrink-0" />
-                          ) : (
-                            <span className="w-7 h-10 rounded bg-brand-200 shrink-0" />
-                          )}
+                          <BookCover book={b} rounded="rounded" className="w-7 h-10 shadow-sm shrink-0" showTitle={false} />
                           <span className="flex-1 min-w-0">
                             <span className="block text-sm font-semibold text-ink truncate">{b.title}</span>
                             <span className="block text-xs text-stone-400 truncate">{b.author}</span>

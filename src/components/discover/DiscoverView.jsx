@@ -10,6 +10,8 @@ import { SUGGEST_FORMAT, parseSuggestions } from '../../lib/aiBooks';
 import BookLoader from '../ui/BookLoader';
 import Button from '../ui/Button';
 import Chip from '../ui/Chip';
+import PageHeader from '../ui/PageHeader';
+import BookCover from '../ui/BookCover';
 
 // Module scope keeps the impure call out of render-purity checks.
 const makeSeed = () => Math.random().toString(36).slice(2);
@@ -78,16 +80,12 @@ function DiscoverCard({ s, owned, onAdd, onHide }) {
         </button>
       )}
       <div className="w-16 shrink-0">
-        {cover.coverUrl ? (
-          <img src={cover.coverUrl} alt="" className="w-16 h-24 object-cover rounded-lg shadow" />
-        ) : (
-          <div
-            className="w-16 h-24 rounded-lg shadow flex items-center justify-center p-1 text-center"
-            style={{ backgroundColor: cover.spineColor || 'var(--color-brand-300)' }}
-          >
-            <span className="text-white text-[9px] font-bold leading-tight line-clamp-4">{s.title}</span>
-          </div>
-        )}
+        <BookCover
+          book={{ coverUrl: cover.coverUrl, spineColor: cover.spineColor, title: s.title }}
+          rounded="rounded-lg"
+          className="w-16 h-24 shadow"
+          titleClass="text-[9px]"
+        />
       </div>
       <div className="min-w-0 flex-1 flex flex-col">
         <p className="font-display font-bold text-ink leading-snug line-clamp-2 pr-5">{s.title}</p>
@@ -227,15 +225,11 @@ export default function DiscoverView({ books, onAdd }) {
 
   return (
     <div className="mt-4 mb-20 animate-in fade-in duration-500">
-      <div className="text-center max-w-2xl mx-auto mb-6">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Compass size={28} className="text-brand-600 drop-shadow-sm" />
-          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">
-            Discover
-          </h2>
-        </div>
-        <p className="text-stone-500">Tell me what you're in the mood for and I'll find books to explore.</p>
-      </div>
+      <PageHeader
+        icon={Compass}
+        title="Discover"
+        subtitle="Tell me what you're in the mood for and I'll find books to explore."
+      />
 
       {/* Prompt */}
       <form

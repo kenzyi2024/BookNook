@@ -4,6 +4,9 @@ import {
   Trophy, Ruler, Users, Layers, Library, Sparkles, Flame,
 } from 'lucide-react';
 import WrappedView from './WrappedView';
+import PageHeader from '../ui/PageHeader';
+import Button from '../ui/Button';
+import BookCover from '../ui/BookCover';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
 import { normalizeGenre } from '../../lib/genres';
@@ -26,20 +29,10 @@ function buildConicStops(data, total) {
     .join(', ');
 }
 
-// A small book cover thumbnail — real cover, else a tinted spine box with the title.
+// A small book cover thumbnail — shared cover with graceful placeholder/fallback.
 function BookThumb({ book, className = '' }) {
   if (!book) return <div className={`bg-stone-100 rounded ${className}`} />;
-  if (book.coverUrl) {
-    return <img src={book.coverUrl} alt="" className={`object-cover rounded shadow-sm ${className}`} />;
-  }
-  return (
-    <div
-      className={`rounded shadow-sm flex items-center justify-center p-1 ${book.coverColor || 'bg-stone-400'} ${className}`}
-      style={book.spineColor ? { backgroundColor: book.spineColor } : undefined}
-    >
-      <span className="text-white text-[9px] font-bold text-center leading-tight line-clamp-3 drop-shadow">{book.title}</span>
-    </div>
-  );
+  return <BookCover book={book} rounded="rounded" className={`shadow-sm ${className}`} titleClass="text-[9px]" />;
 }
 
 function Highlight({ label, icon, book, meta }) {
@@ -144,11 +137,18 @@ function HBars({ data, color = 'var(--color-brand-500)' }) {
   );
 }
 
-function HeroStat({ value, label }) {
+function HeroStat({ icon, value, label }) {
   return (
-    <div>
-      <div className="font-display font-bold text-3xl md:text-4xl text-ink leading-none">{value}</div>
-      <div className="text-stone-500 text-xs font-semibold uppercase tracking-wider mt-1">{label}</div>
+    <div className="flex items-center gap-3 min-w-0">
+      {icon ? (
+        <span className="w-10 h-10 rounded-xl bg-surface/80 border border-brand-100 flex items-center justify-center text-brand-500 shrink-0">
+          {icon}
+        </span>
+      ) : null}
+      <div className="min-w-0">
+        <div className="font-display font-bold text-2xl md:text-3xl text-ink leading-none">{value}</div>
+        <div className="text-stone-500 text-[11px] font-semibold uppercase tracking-wider mt-1 truncate">{label}</div>
+      </div>
     </div>
   );
 }
@@ -338,13 +338,15 @@ export default function MetricsView({ books }) {
   if (!books.length) {
     return (
       <div className="animate-in fade-in duration-500">
-        <div className="mb-2 flex items-center gap-3">
-          <BarChart2 size={34} className="text-brand-600 drop-shadow-sm shrink-0" />
-          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm">Your Year in Books</h2>
-        </div>
-        <div className="text-center py-20">
-          <BarChart2 size={40} className="mx-auto mb-3 text-brand-300" />
-          <p className="text-stone-500">Your reading stats will appear here as you add and finish books.</p>
+        <PageHeader icon={BarChart2} title="Your Reading" subtitle="Your reading story, in numbers" />
+        <div className="rounded-3xl border border-stone-200/70 bg-surface shadow-sm px-6 py-20 text-center">
+          <span className="w-16 h-16 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mx-auto mb-4">
+            <BarChart2 size={30} className="text-brand-400" />
+          </span>
+          <p className="font-display font-semibold text-lg text-ink">No stats yet</p>
+          <p className="text-stone-500 mt-1 max-w-sm mx-auto">
+            As you add books, log sessions, and rate what you finish, your reading year fills in here — genres, pace, streaks, and more.
+          </p>
         </div>
       </div>
     );
@@ -353,35 +355,31 @@ export default function MetricsView({ books }) {
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
       {showWrapped && <WrappedView books={books} onClose={() => setShowWrapped(false)} />}
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <BarChart2 size={34} className="text-brand-600 drop-shadow-sm shrink-0" />
-          <h2 className="font-display italic font-bold text-4xl md:text-5xl text-brand-600 tracking-tight drop-shadow-sm truncate">
-            Your Year in Books
-          </h2>
-        </div>
-        <button
-          onClick={() => setShowWrapped(true)}
-          className="shrink-0 inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm px-4 py-2.5 rounded-full shadow-sm transition-colors"
-        >
-          <Sparkles size={16} /> Wrapped
-        </button>
-      </div>
+      <PageHeader
+        icon={BarChart2}
+        title="Your Reading"
+        subtitle={`${read.length + reading.length} books tracked · ${totalPagesRead.toLocaleString()} pages`}
+        action={
+          <Button onClick={() => setShowWrapped(true)}>
+            <Sparkles size={16} /> Wrapped
+          </Button>
+        }
+      />
 
       {/* At a glance — the headline numbers */}
-      <div className="rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-100/70 via-amber-50 to-surface p-6 md:p-7 shadow-sm">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-5">
-          <HeroStat value={read.length} label="Finished" />
-          <HeroStat value={reading.length} label="Reading" />
-          <HeroStat value={wantCount} label="Want to Read" />
-          <HeroStat value={totalPagesRead.toLocaleString()} label="Pages Read" />
-          <HeroStat value={avgRating !== '—' ? `${avgRating}★` : '—'} label="Avg Rating" />
-          <HeroStat value={streak} label="Day Streak" />
-          <HeroStat value={finishedThisYear} label={`Finished in ${year}`} />
-          {projectedYear > 0 && <HeroStat value={`~${projectedYear}`} label={`On Pace for ${year}`} />}
+      <div className="rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-surface p-6 md:p-7 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-6">
+          <HeroStat icon={<CheckCircle size={18} />} value={read.length} label="Finished" />
+          <HeroStat icon={<BookOpen size={18} />} value={reading.length} label="Reading" />
+          <HeroStat icon={<Book size={18} />} value={wantCount} label="Want to Read" />
+          <HeroStat icon={<Layers size={18} />} value={totalPagesRead.toLocaleString()} label="Pages Read" />
+          <HeroStat icon={<Star size={18} />} value={avgRating !== '—' ? `${avgRating}★` : '—'} label="Avg Rating" />
+          <HeroStat icon={<Flame size={18} />} value={streak} label="Day Streak" />
+          <HeroStat icon={<Trophy size={18} />} value={finishedThisYear} label={`Finished in ${year}`} />
+          {projectedYear > 0 && <HeroStat icon={<Sparkles size={18} />} value={`~${projectedYear}`} label={`On Pace for ${year}`} />}
         </div>
         {read.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-brand-100/70 flex items-center gap-2 text-sm text-brand-700">
+          <div className="mt-6 pt-4 border-t border-brand-100/70 flex items-center gap-2 text-sm text-brand-700">
             <Layers size={16} />
             <span>
               Stacked up, that&rsquo;s ~<b>{stack}</b> of books

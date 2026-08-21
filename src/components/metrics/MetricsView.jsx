@@ -307,8 +307,11 @@ export default function MetricsView({ books }) {
   books.forEach((b) => (b.sessions || []).forEach((s) => { const key = monthKey(s.date); if (key in pagesByMonth) pagesByMonth[key] += s.pagesRead || 0; }));
   const booksMonthData = months.map((m) => ({ label: monthLabel(m), value: finishedByMonth[m] }));
   const pagesMonthData = months.map((m) => ({ label: monthLabel(m), value: pagesByMonth[m] }));
-  const hasFinishMonths = booksMonthData.some((d) => d.value > 0);
-  const hasPagesMonths = pagesMonthData.some((d) => d.value > 0);
+  // Only worth charting once activity spans at least a couple of months.
+  const hasFinishMonths = booksMonthData.filter((d) => d.value > 0).length >= 2;
+  const hasPagesMonths = pagesMonthData.filter((d) => d.value > 0).length >= 2;
+  // "Most-read authors" only means something once someone's been read more than once.
+  const hasTopAuthors = topAuthors.length > 0 && topAuthors[0][1] >= 2;
 
   // Rating distribution
   const ratingData = [5, 4, 3, 2, 1].map((star) => ({
@@ -440,13 +443,21 @@ export default function MetricsView({ books }) {
       {/* On Your Shelf — a wall of the real covers you've finished */}
       <CoverWall books={finishedShelf} />
 
-      {/* Secondary stat tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile icon={<Star size={15} className="text-brand-400 fill-brand-400" />} label="Avg Rating" value={avgRating} sub={avgRating !== '—' ? '/ 5' : ''} />
-        <StatTile icon={<Clock size={15} className="text-brand-500" />} label="Avg Length" value={avgPages || '—'} sub={avgPages ? 'pages' : ''} />
-        <StatTile icon={<Timer size={15} className="text-brand-500" />} label="Longest Session" value={longest ? `${longest}` : '—'} sub={longest ? 'min' : ''} />
-        <StatTile icon={<XCircle size={15} className="text-status-dnf" />} label="Set Aside (DNF)" value={dnf.length} />
-      </div>
+      {/* Secondary stat tiles — only the ones that actually have data */}
+      {(() => {
+        const tiles = [
+          avgRating !== '—' && { key: 'rating', icon: <Star size={15} className="text-brand-400 fill-brand-400" />, label: 'Avg Rating', value: avgRating, sub: '/ 5' },
+          avgPages > 0 && { key: 'length', icon: <Clock size={15} className="text-brand-500" />, label: 'Avg Length', value: avgPages, sub: 'pages' },
+          longest > 0 && { key: 'session', icon: <Timer size={15} className="text-brand-500" />, label: 'Longest Session', value: longest, sub: 'min' },
+          dnf.length > 0 && { key: 'dnf', icon: <XCircle size={15} className="text-status-dnf" />, label: 'Set Aside (DNF)', value: dnf.length },
+        ].filter(Boolean);
+        if (!tiles.length) return null;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {tiles.map((t) => <StatTile key={t.key} icon={t.icon} label={t.label} value={t.value} sub={t.sub} />)}
+          </div>
+        );
+      })()}
 
       {/* Reading achievements */}
       <Achievements books={books} streak={streak} totalPagesRead={totalPagesRead} />
@@ -482,7 +493,7 @@ export default function MetricsView({ books }) {
       </div>
 
       {/* Genres + Ratings + Authors — only cards that have data */}
-      {(counted.length > 0 || rated.length > 0 || topAuthors.length > 0) && (
+      {(counted.length > 0 || rated.length > 0 || hasTopAuthors) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {counted.length > 0 && (
             <Card title="Genres Read" icon={<Book size={18} className="text-brand-500" />}>
@@ -494,7 +505,7 @@ export default function MetricsView({ books }) {
               <HBars data={ratingData} />
             </Card>
           )}
-          {topAuthors.length > 0 && (
+          {hasTopAuthors && (
             <Card title="Most-Read Authors" icon={<Users size={18} className="text-brand-500" />}>
               <div className="flex flex-col gap-3">
                 {topAuthors.map(([name, count], i) => {

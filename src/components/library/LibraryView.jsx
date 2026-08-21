@@ -227,6 +227,20 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
   // --- Unified view: one shelf + filter chips ---
   return (
     <div className="mt-8 mb-20 animate-in fade-in duration-500" data-pos={posBump}>
+      {/* Page title — kept at the very top so it aligns with the other tabs */}
+      <div className="relative z-20">
+        <PageHeader
+          icon={Library}
+          title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
+          subtitle={books.length ? `${books.length} book${books.length === 1 ? '' : 's'} on your shelves` : 'Build your shelves'}
+          action={
+            <Button variant="soft" onClick={() => getSuggestions('history')} disabled={books.length === 0}>
+              <Sparkles size={15} /> Up Next
+            </Button>
+          }
+        />
+      </div>
+
       {/* Toolbar — one clean bar: filters + search + sort · view + more */}
       <div className="relative z-40 mb-4 flex flex-wrap items-center gap-2">
         {/* segmented status filters */}
@@ -333,21 +347,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
         </div>
       </div>
 
-      {/* Library title + Up Next */}
-      <div className="relative z-20">
-        <PageHeader
-          icon={Library}
-          title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
-          subtitle={books.length ? `${books.length} book${books.length === 1 ? '' : 's'} on your shelves` : 'Build your shelves'}
-          action={
-            <Button variant="soft" onClick={() => getSuggestions('history')} disabled={books.length === 0}>
-              <Sparkles size={15} /> Up Next
-            </Button>
-          }
-        />
-      </div>
-
-      {/* Recommendations — their own space, below the title */}
+      {/* Recommendations — their own space, below the toolbar */}
       {(loadingType === 'history' || (suggestionsType === 'history' && suggestions.length > 0)) && (
         <div className="relative z-40 mb-6">
           {loadingType === 'history' ? (

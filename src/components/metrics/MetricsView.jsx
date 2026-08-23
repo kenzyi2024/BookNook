@@ -340,7 +340,7 @@ export default function MetricsView({ books }) {
 
   if (!books.length) {
     return (
-      <div className="animate-in fade-in duration-500">
+      <div className="mt-2 mb-20 animate-in fade-in duration-500">
         <PageHeader icon={BarChart2} title="Your Reading" subtitle="Your reading story, in numbers" />
         <div className="rounded-3xl border border-stone-200/70 bg-surface shadow-sm px-6 py-20 text-center">
           <span className="w-16 h-16 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mx-auto mb-4">
@@ -356,7 +356,7 @@ export default function MetricsView({ books }) {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-6">
+    <div className="mt-2 mb-20 animate-in fade-in duration-500 space-y-6">
       {showWrapped && <WrappedView books={books} onClose={() => setShowWrapped(false)} />}
       <PageHeader
         icon={BarChart2}

@@ -224,7 +224,7 @@ export default function DiscoverView({ books, onAdd }) {
   }
 
   return (
-    <div className="mt-4 mb-20 animate-in fade-in duration-500">
+    <div className="mt-2 mb-20 animate-in fade-in duration-500">
       <PageHeader
         icon={Compass}
         title="Discover"

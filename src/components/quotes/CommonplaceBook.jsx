@@ -101,7 +101,7 @@ export default function CommonplaceBook({ books, onSelect, onUpdateBook }) {
   );
 
   return (
-    <div className="mt-8 mb-20 animate-in fade-in duration-500">
+    <div className="mt-2 mb-20 animate-in fade-in duration-500">
       <PageHeader
         icon={Quote}
         title="Commonplace Book"

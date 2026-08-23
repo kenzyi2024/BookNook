@@ -199,7 +199,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
   if (separated) {
     const shelves = STATUS_SHELVES.map((s) => ({ ...s, list: books.filter((b) => b.status === s.id) })).filter((s) => s.list.length);
     return (
-      <div className="mt-8 mb-20 animate-in fade-in duration-500">
+      <div className="mt-2 mb-20 animate-in fade-in duration-500">
         <div className="relative z-40 flex justify-end mb-4">{ToggleBtn}</div>
         {shelves.length === 0 ? (
           <EmptyLibrary suggestBlock={suggestBlock} onLoadSample={!sampleLoaded ? onToggleSample : undefined} />
@@ -226,7 +226,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
 
   // --- Unified view: one shelf + filter chips ---
   return (
-    <div className="mt-8 mb-20 animate-in fade-in duration-500" data-pos={posBump}>
+    <div className="mt-2 mb-20 animate-in fade-in duration-500" data-pos={posBump}>
       {/* Page title — kept at the very top so it aligns with the other tabs */}
       <div className="relative z-20">
         <PageHeader

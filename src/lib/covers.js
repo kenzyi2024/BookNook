@@ -83,83 +83,67 @@ export async function lookupCoverUrl(title, author) {
   }
 }
 
+// Throttle outbound cover lookups so opening a library of dozens of books doesn't
+// fire dozens of simultaneous requests (which saturate the browser's connection
+// pool and trip Google Books rate limits, making every cover crawl in slowly).
+const MAX_CONCURRENT = 5;
+let active = 0;
+const waiters = [];
+function drain() {
+  while (waiters.length && active < MAX_CONCURRENT) {
+    active += 1;
+    waiters.shift()();
+  }
+}
+function acquire() {
+  return new Promise((resolve) => { waiters.push(resolve); drain(); });
+}
+function release() { active -= 1; drain(); }
+
 /**
- * Average color of an image as an `rgb(...)` string, darkened a touch so white
- * spine text stays legible. Requires a CORS-enabled image; returns '' if the
- * canvas is tainted or the image can't load.
+ * TEMPORARY — force a fresh cover lookup, ignoring any stored/cached URL, to
+ * repair books that saved a wrong cover.
  */
-export function dominantColor(url) {
-  return new Promise((resolve) => {
-    if (!url) return resolve('');
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        const w = (canvas.width = 24);
-        const h = (canvas.height = 24);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        const { data } = ctx.getImageData(0, 0, w, h);
-        let r = 0;
-        let g = 0;
-        let b = 0;
-        let n = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] < 128) continue; // skip near-transparent pixels
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
-          n += 1;
-        }
-        if (!n) return resolve('');
-        const f = 0.72; // darken for contrast with white text
-        resolve(
-          `rgb(${Math.round((r / n) * f)}, ${Math.round((g / n) * f)}, ${Math.round((b / n) * f)})`
-        );
-      } catch {
-        resolve(''); // tainted canvas (no CORS) — fall back to coverColor
-      }
-    };
-    img.onerror = () => resolve('');
-    img.src = url;
-  });
+export async function refreshCover(title, author) {
+  await acquire();
+  try {
+    const googleUrl = await lookupGoogleCover(title, author);
+    const display = googleUrl || (await lookupCoverUrl(title, author));
+    mem[keyOf(title, author)] = { display, color: '' };
+    saveCacheSoon();
+    return { coverUrl: display, spineColor: '' };
+  } finally {
+    release();
+  }
 }
 
 /**
  * Resolve `{ coverUrl, spineColor }` for a book, cached by title+author.
- * Pass `knownUrl` (e.g. book.coverUrl from the DB) to skip the lookup.
+ *
+ * Spines are tinted from the active theme now, so we no longer sample a dominant
+ * color (that meant loading + canvas-decoding an extra image per book). We just
+ * fetch a single display cover — a stored URL wins with no network at all, else
+ * one throttled Google Books lookup (Open Library only as a fallback).
  */
-/**
- * TEMPORARY — force a fresh cover lookup, ignoring any stored/cached URL, to
- * repair books that saved a wrong cover. Prefers Google Books, falls back to
- * Open Library, and re-samples the tint. Remove this along with the detail-page
- * "Refresh cover" button once existing covers are cleaned up.
- */
-export async function refreshCover(title, author) {
-  const olUrl = await lookupCoverUrl(title, author);
-  const color = olUrl ? await dominantColor(olUrl) : '';
-  const googleUrl = await lookupGoogleCover(title, author);
-  const display = googleUrl || olUrl;
-  mem[keyOf(title, author)] = { display, olUrl, color };
-  saveCacheSoon();
-  return { coverUrl: display, spineColor: color };
-}
-
 export async function resolveCover(title, author, knownUrl = '') {
   const k = keyOf(title, author);
-  const cached = mem[k];
-  if (cached && cached.color !== undefined && (!knownUrl || cached.display === knownUrl)) {
-    return { coverUrl: knownUrl || cached.display, spineColor: cached.color };
+
+  if (knownUrl) {
+    if (!mem[k]) { mem[k] = { display: knownUrl, color: '' }; saveCacheSoon(); }
+    return { coverUrl: knownUrl, spineColor: '' };
   }
-  // Sample the tint from an Open Library image (CORS-friendly, so the canvas
-  // isn't tainted); prefer a stored URL, then a nicer/more-current Google Books
-  // cover, then Open Library, for the actual display image.
-  const olUrl = await lookupCoverUrl(title, author);
-  const color = olUrl ? await dominantColor(olUrl) : '';
-  const googleUrl = knownUrl ? '' : await lookupGoogleCover(title, author);
-  const display = knownUrl || googleUrl || olUrl;
-  mem[k] = { display, olUrl, color };
-  saveCacheSoon();
-  return { coverUrl: display, spineColor: color };
+
+  const cached = mem[k];
+  if (cached) return { coverUrl: cached.display, spineColor: cached.color || '' };
+
+  await acquire();
+  try {
+    let display = await lookupGoogleCover(title, author);
+    if (!display) display = await lookupCoverUrl(title, author);
+    mem[k] = { display, color: '' };
+    saveCacheSoon();
+    return { coverUrl: display, spineColor: '' };
+  } finally {
+    release();
+  }
 }

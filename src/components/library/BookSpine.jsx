@@ -38,31 +38,23 @@ export default function BookSpine({ book, onSelect, onPersistCover, index = 0 })
   const progress = Math.min(100, Math.round((book.currentPage / book.totalPages) * 100) || 0);
   const dot = STATUS_DOT[book.status] || STATUS_DOT.want_to_read;
 
-  const [cover, setCover] = useState({
-    coverUrl: book.coverUrl || '',
-    spineColor: book.spineColor || '',
-  });
+  const [cover, setCover] = useState({ coverUrl: book.coverUrl || '' });
 
   useEffect(() => {
-    // Already resolved and stored on the book — initial state already reflects it.
-    if (book.coverUrl && book.spineColor) return;
+    // Already have a stored cover — nothing to fetch.
+    if (book.coverUrl) return;
     let alive = true;
-    resolveCover(book.title, book.author, book.coverUrl || '').then((r) => {
-      if (!alive) return;
+    resolveCover(book.title, book.author, '').then((r) => {
+      if (!alive || !r.coverUrl) return;
       setCover(r);
-      // Persist newly-resolved cover/color to the DB once (self-healing backfill).
-      const changed =
-        (r.coverUrl && r.coverUrl !== (book.coverUrl || '')) ||
-        (r.spineColor && r.spineColor !== (book.spineColor || ''));
-      if (onPersistCover && changed && needsPersist(book._id)) {
+      // Persist the newly-resolved cover once (self-healing backfill).
+      if (onPersistCover && needsPersist(book._id)) {
         markPersisted(book._id);
-        onPersistCover(book._id, { coverUrl: r.coverUrl, spineColor: r.spineColor });
+        onPersistCover(book._id, { coverUrl: r.coverUrl });
       }
     });
-    return () => {
-      alive = false;
-    };
-  }, [book._id, book.title, book.author, book.coverUrl, book.spineColor, onPersistCover]);
+    return () => { alive = false; };
+  }, [book._id, book.title, book.author, book.coverUrl, onPersistCover]);
 
   // The hover card is rendered in a portal so it can't be clipped by the shelf's
   // scroll container or trapped beneath the control bar's stacking context.

@@ -60,7 +60,7 @@ export default function SeriesPanel({ book, books, onUpdate, onOpenBook }) {
     : [];
 
   return (
-    <div className="mt-4">
+    <div className="mt-5">
       <div className="flex items-center gap-3">
         <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
           <Library size={14} /> Series

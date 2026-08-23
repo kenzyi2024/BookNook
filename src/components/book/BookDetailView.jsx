@@ -7,6 +7,7 @@ import MotifTracker from './MotifTracker';
 import ContentWarningsModal from './ContentWarningsModal';
 import SeriesPanel from './SeriesPanel';
 import BookCover from '../ui/BookCover';
+import Chip from '../ui/Chip';
 import { level as cwLevel, LEVEL_ORDER } from '../../lib/contentWarnings';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AIToolsView from './AIToolsView';
@@ -209,31 +210,22 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
           )}
 
           {/* Mood tags — how the book felt, not its genre */}
-          <div className="mt-1">
+          <div className="mt-5">
             <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Moods</span>
             <div className="flex flex-wrap gap-2 mt-2">
               {MOODS.map((mood) => {
                 const on = (book.moods || []).includes(mood);
                 return (
-                  <button
-                    key={mood}
-                    onClick={() => toggleMood(mood)}
-                    aria-pressed={on}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      on
-                        ? 'bg-brand-500 text-white'
-                        : 'bg-surface text-stone-500 border border-stone-200 hover:border-brand-300 hover:text-brand-600'
-                    }`}
-                  >
+                  <Chip key={mood} active={on} aria-pressed={on} onClick={() => toggleMood(mood)}>
                     {mood}
-                  </button>
+                  </Chip>
                 );
               })}
             </div>
           </div>
 
           {/* Content warnings — hidden until revealed, since they can be spoilers */}
-          <div className="mt-4">
+          <div className="mt-5">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Content warnings</span>
               {cwCount > 0 && (

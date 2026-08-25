@@ -13,7 +13,7 @@ export default function PageHeader({ icon: Icon, title, subtitle, action, classN
           </span>
         )}
         <div className="min-w-0">
-          <h1 className="font-display font-bold text-[1.7rem] md:text-3xl leading-tight text-ink tracking-tight truncate">
+          <h1 className="font-display font-bold text-2xl md:text-3xl leading-tight text-ink tracking-tight truncate">
             {title}
           </h1>
           {subtitle ? <p className="text-sm text-stone-500 mt-0.5 truncate">{subtitle}</p> : null}

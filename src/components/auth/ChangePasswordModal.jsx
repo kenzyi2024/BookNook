@@ -49,7 +49,7 @@ export default function ChangePasswordModal({ onClose }) {
         className="bg-surface w-full max-w-sm rounded-3xl shadow-2xl p-6 animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-display font-bold text-xl text-ink mb-1">Change password</h3>
+        <h3 className="font-display font-bold text-lg text-ink mb-1">Change password</h3>
         <p className="text-sm text-stone-500 mb-5">Enter your current password and a new one.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

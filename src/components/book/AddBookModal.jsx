@@ -82,7 +82,7 @@ export default function AddBookModal({ onClose, onAdd }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-stone-100 flex justify-between items-center bg-stone-50">
-          <h3 className="text-xl font-display font-bold text-ink">Add a Book</h3>
+          <h3 className="font-display font-bold text-lg text-ink">Add a Book</h3>
           <button
             onClick={onClose}
             className="text-stone-400 hover:text-ink bg-surface rounded-full p-1 shadow-sm border border-stone-200 transition-colors"

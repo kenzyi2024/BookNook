@@ -42,7 +42,7 @@ export default function ReflectionsPanel({ items, onSave, onClose }) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-          <h3 className="font-display font-semibold text-lg text-ink flex items-center gap-2">
+          <h3 className="font-display font-bold text-lg text-ink flex items-center gap-2">
             <Feather size={18} className="text-brand-500" /> Reflections
           </h3>
           <button onClick={onClose} className="text-stone-400 hover:text-ink transition-colors" aria-label="Close">

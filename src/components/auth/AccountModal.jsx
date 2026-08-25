@@ -58,7 +58,7 @@ export default function AccountModal({ onClose, onToggleSample, sampleLoaded, sa
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
       <div className="bg-surface w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display font-bold text-xl text-ink">Account & appearance</h3>
+          <h3 className="font-display font-bold text-lg text-ink">Account & appearance</h3>
           <button onClick={onClose} className="text-stone-400 hover:text-ink" aria-label="Close"><X size={20} /></button>
         </div>
 

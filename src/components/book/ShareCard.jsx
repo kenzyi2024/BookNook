@@ -412,7 +412,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
   const canNativeShare = typeof navigator !== 'undefined' && !!navigator.canShare;
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
       <div className="bg-surface rounded-3xl shadow-2xl p-5 max-w-sm w-full animate-in zoom-in-95 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-display font-bold text-lg text-ink">

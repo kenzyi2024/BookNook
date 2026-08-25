@@ -18,7 +18,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-[96] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in"
       onClick={onCancel}
     >
       <div
@@ -37,7 +37,7 @@ export default function ConfirmDialog({
             <AlertTriangle size={22} />
           </span>
           <div className="flex-1">
-            <h3 className="font-display font-semibold text-lg text-ink">{title}</h3>
+            <h3 className="font-display font-bold text-lg text-ink">{title}</h3>
             {message && <p className="text-sm text-stone-500 mt-1 leading-relaxed">{message}</p>}
           </div>
         </div>

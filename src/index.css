@@ -112,27 +112,27 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 0 2.5rem;
+  padding: 0 3.5rem;
   pointer-events: none;
 }
 .fairy-node { display: flex; flex-direction: column; align-items: center; }
 .fairy-cord {
   width: 1px;
-  height: 9px;
-  background: rgba(60, 40, 20, 0.22);
+  height: 8px;
+  background: rgba(60, 40, 20, 0.16);
 }
 .dark .fairy-cord { background: rgba(255, 240, 210, 0.18); }
 /* gentle sag — vary the drop length so the string dips between hangers */
-.fairy-node:nth-child(2n) .fairy-cord { height: 16px; }
-.fairy-node:nth-child(4n + 1) .fairy-cord { height: 12px; }
+.fairy-node:nth-child(2n) .fairy-cord { height: 14px; }
+.fairy-node:nth-child(4n + 1) .fairy-cord { height: 11px; }
 
 .fairy-bulb {
-  width: 9px;
-  height: 11px;
+  width: 6px;
+  height: 8px;
   border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
   background: #d7ccbb; /* unlit — soft warm off-white */
-  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.22);
-  opacity: 0.5;
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.18);
+  opacity: 0.32; /* barely-there decorative string by day */
   transition: opacity 0.6s ease, background 0.6s ease, box-shadow 0.6s ease;
 }
 /* Lights ON when dark mode is activated */

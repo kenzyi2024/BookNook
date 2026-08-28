@@ -101,8 +101,8 @@ function acquire() {
 function release() { active -= 1; drain(); }
 
 /**
- * TEMPORARY — force a fresh cover lookup, ignoring any stored/cached URL, to
- * repair books that saved a wrong cover.
+ * Force a fresh cover lookup, ignoring any stored/cached URL — backs the
+ * "Refresh cover" action for replacing a wrong or low-quality cover.
  */
 export async function refreshCover(title, author) {
   await acquire();

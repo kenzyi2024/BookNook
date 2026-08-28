@@ -62,21 +62,25 @@ async function searchOpenLibrary(query) {
 }
 
 /**
- * Search books by title/author. Returns a normalized result array (never throws;
- * returns [] if everything fails).
+ * Search books by title/author. Returns a normalized result array. Throws only
+ * when BOTH providers are unreachable, so the UI can tell a real outage from a
+ * genuine "no matches" result and offer a retry.
  */
 export async function searchBooks(query) {
   const q = (query || '').trim();
   if (q.length <= 2) return [];
+  let googleOk = false;
   try {
     const g = await searchGoogle(q);
+    googleOk = true;
     if (g.length) return g;
   } catch {
-    /* fall through to Open Library */
+    /* google unreachable — fall through to Open Library */
   }
   try {
     return await searchOpenLibrary(q);
   } catch {
-    return [];
+    if (googleOk) return []; // Google responded with nothing; OL just failed — treat as no matches.
+    throw new Error('Book search is unavailable right now. Please try again.');
   }
 }

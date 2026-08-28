@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -39,11 +39,13 @@ export function ToastProvider({ children }) {
     [dismiss]
   );
 
-  const toast = {
+  // Stable identity so consumers that list `toast` in effect deps don't re-run
+  // every time a notification appears/dismisses.
+  const toast = useMemo(() => ({
     success: (m, d) => notify(m, 'success', d),
     error: (m, d) => notify(m, 'error', d),
     info: (m, d) => notify(m, 'info', d),
-  };
+  }), [notify]);
 
   return (
     <ToastContext.Provider value={toast}>

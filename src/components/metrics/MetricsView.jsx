@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart2, CheckCircle, BookOpen, Star, XCircle, Clock, Book, Timer,
   Trophy, Ruler, Users, Layers, Library, Sparkles, Flame,
@@ -223,6 +223,10 @@ function lastMonths(n) {
 
 export default function MetricsView({ books }) {
   const [showWrapped, setShowWrapped] = useState(false);
+
+  // All the aggregation/sorting is derived from `books`; memoize so it doesn't
+  // recompute on unrelated re-renders (e.g. toggling the Wrapped overlay).
+  const derived = useMemo(() => {
   const read = books.filter((b) => b.status === 'read');
   const reading = books.filter((b) => b.status === 'reading');
   const dnf = books.filter((b) => b.status === 'dnf');
@@ -337,6 +341,23 @@ export default function MetricsView({ books }) {
     topGenre: topG[0]?.[0],
     longestBook,
   });
+
+  return {
+    read, reading, dnf, totalPagesRead, rated, avgRating, avgPages, longest, hoursRead,
+    wantCount, streak, year, finishedThisYear, stack, topRated, longestBook, latestFinish,
+    currentRead, curPct, counted, genreData, topAuthors, statusData, booksMonthData,
+    pagesMonthData, hasFinishMonths, hasPagesMonths, hasTopAuthors, ratingData,
+    projectedYear, finishedShelf, insights,
+  };
+  }, [books]);
+
+  const {
+    read, reading, dnf, totalPagesRead, rated, avgRating, avgPages, longest, hoursRead,
+    wantCount, streak, year, finishedThisYear, stack, topRated, longestBook, latestFinish,
+    currentRead, curPct, counted, genreData, topAuthors, statusData, booksMonthData,
+    pagesMonthData, hasFinishMonths, hasPagesMonths, hasTopAuthors, ratingData,
+    projectedYear, finishedShelf, insights,
+  } = derived;
 
   if (!books.length) {
     return (

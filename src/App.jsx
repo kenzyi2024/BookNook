@@ -85,12 +85,21 @@ export default function App() {
   };
 
   const handleUpdateBook = async (id, updates) => {
-    setBooks((prev) => prev.map((b) => (b._id === id ? { ...b, ...updates } : b)));
+    // Optimistic update, capturing the prior book so we can roll back on failure.
+    let prior = null;
+    setBooks((prev) => prev.map((b) => {
+      if (b._id === id) { prior = b; return { ...b, ...updates }; }
+      return b;
+    }));
     setSelectedBook((prev) => (prev && prev._id === id ? { ...prev, ...updates } : prev));
     try {
       await api.updateBook(id, updates);
     } catch (err) {
-      toast.error(err.message || 'Failed to save changes.');
+      if (prior) {
+        setBooks((prev) => prev.map((b) => (b._id === id ? prior : b)));
+        setSelectedBook((prev) => (prev && prev._id === id ? prior : prev));
+      }
+      toast.error(err.message || 'Failed to save changes. Your change was reverted.');
     }
   };
 

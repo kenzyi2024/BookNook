@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { DEFAULT_THEME } from '../lib/themes';
 import { localBooks, localProfile, hasGuestBooks, clearGuestData } from '../lib/localBooks';
 
@@ -192,7 +192,7 @@ export function AuthProvider({ children }) {
     [token]
   );
 
-  const value = {
+  const value = useMemo(() => ({
     token,
     user,
     loading,
@@ -209,7 +209,7 @@ export function AuthProvider({ children }) {
     updateProfile,
     logout,
     changePassword,
-  };
+  }), [token, user, loading, guest, converting, login, register, googleLogin, loginAsGuest, startAccountSave, cancelAccountSave, updateProfile, logout, changePassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

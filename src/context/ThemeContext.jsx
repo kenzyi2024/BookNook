@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { applyTheme, DEFAULT_THEME, THEMES } from '../lib/themes';
 
 const ThemeContext = createContext(null);
@@ -38,9 +38,10 @@ export function ThemeProvider({ children }) {
     setHideReflectionsState(hide);
   }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, dark, toggleDark, hideReflections, setHideReflections }}>
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({ theme, setTheme, dark, toggleDark, hideReflections, setHideReflections }),
+    [theme, setTheme, dark, toggleDark, hideReflections, setHideReflections]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

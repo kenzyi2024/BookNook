@@ -44,7 +44,7 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  // TEMPORARY: force-repair a wrong stored cover. Remove with the button below.
+  // Refresh cover: fetch a fresh cover image, ignoring the cached/stored one.
   const refreshCoverNow = async () => {
     setRefreshing(true);
     try {

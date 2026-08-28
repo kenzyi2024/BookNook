@@ -13,6 +13,7 @@ export default function AddBookModal({ onClose, onAdd }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,8 +33,12 @@ export default function AddBookModal({ onClose, onAdd }) {
         return;
       }
       setIsSearching(true);
+      setSearchError('');
       try {
         setSearchResults(await searchBooks(searchQuery));
+      } catch (err) {
+        setSearchResults([]);
+        setSearchError(err.message || 'Book search is unavailable right now.');
       } finally {
         setIsSearching(false);
       }
@@ -127,6 +132,24 @@ export default function AddBookModal({ onClose, onAdd }) {
                         </div>
                       </button>
                     ))}
+                  </div>
+                ) : searchError ? (
+                  <div className="text-center mt-8 flex flex-col items-center gap-3">
+                    <p className="text-status-dnf">{searchError}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSearchQuery((q) => `${q} `)}
+                        className="bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 text-sm font-semibold px-4 py-2 rounded-full transition-colors"
+                      >
+                        Try again
+                      </button>
+                      <button
+                        onClick={() => setShowManual(true)}
+                        className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
+                      >
+                        Add it manually
+                      </button>
+                    </div>
                   </div>
                 ) : searchQuery.trim().length > 2 ? (
                   <div className="text-center mt-8 flex flex-col items-center gap-3">

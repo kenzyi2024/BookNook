@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, ListOrdered, GripVertical, CalendarDays } from 'lucide-react';
 import BookCover from '../ui/BookCover';
+import { useDialog } from '../../hooks/useDialog';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -16,6 +17,7 @@ const monthLabel = (key) => {
  * month + its order.
  */
 export default function TBRPlanner({ books, onSave, onClose }) {
+  const dialogRef = useDialog(onClose);
   // Build the list of buckets: Unscheduled, this month + next 5, plus any months
   // already used by the books.
   const now = new Date();
@@ -63,7 +65,7 @@ export default function TBRPlanner({ books, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-      <div className="bg-surface w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Plan your TBR" className="bg-surface w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
           <h3 className="font-display font-bold text-lg text-ink flex items-center gap-2">
             <ListOrdered size={18} className="text-brand-500" /> Plan your TBR

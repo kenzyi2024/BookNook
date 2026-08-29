@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../ui/ToastProvider';
 import { THEMES } from '../../lib/themes';
 import { fileToDataUrl } from '../../lib/image';
+import { useDialog } from '../../hooks/useDialog';
 
 /**
  * Account & personalization: profile picture, display name, and theme picker.
@@ -14,6 +15,7 @@ export default function AccountModal({ onClose, onToggleSample, sampleLoaded, sa
   const { theme, setTheme, dark, toggleDark, hideReflections, setHideReflections } = useTheme();
   const toast = useToast();
   const fileRef = useRef(null);
+  const dialogRef = useDialog(onClose);
 
   const [name, setName] = useState(user?.name || user?.username || '');
   const [pic, setPic] = useState(user?.profilePicture || '');
@@ -56,7 +58,7 @@ export default function AccountModal({ onClose, onToggleSample, sampleLoaded, sa
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-      <div className="bg-surface w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Account and appearance" className="bg-surface w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-display font-bold text-lg text-ink">Account & appearance</h3>
           <button onClick={onClose} className="text-stone-400 hover:text-ink" aria-label="Close"><X size={20} /></button>

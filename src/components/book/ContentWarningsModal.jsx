@@ -3,6 +3,7 @@ import { X, Plus, Search, Sparkles, Loader2 } from 'lucide-react';
 import { CW_CATEGORIES, LEVELS, parseWarnings } from '../../lib/contentWarnings';
 import { useApi } from '../../hooks/useApi';
 import { useToast } from '../ui/ToastProvider';
+import { useDialog } from '../../hooks/useDialog';
 
 /**
  * Editor for a book's content warnings. Each category can be flagged at one of
@@ -12,6 +13,7 @@ import { useToast } from '../ui/ToastProvider';
 export default function ContentWarningsModal({ book, current = [], onSave, onClose }) {
   const api = useApi();
   const toast = useToast();
+  const dialogRef = useDialog(onClose);
   const [aiBusy, setAiBusy] = useState(false);
   // name -> level
   const [selected, setSelected] = useState(() => {
@@ -84,7 +86,7 @@ export default function ContentWarningsModal({ book, current = [], onSave, onClo
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-      <div className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Content warnings" className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
           <h3 className="font-display font-bold text-lg text-ink">Content warnings</h3>
           <button onClick={onClose} className="text-stone-400 hover:text-ink" aria-label="Close"><X size={20} /></button>

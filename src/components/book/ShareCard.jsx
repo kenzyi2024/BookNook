@@ -3,6 +3,7 @@ import { Download, X, Share2 } from 'lucide-react';
 import { fmtDate } from '../../lib/format';
 import { THEMES, DEFAULT_THEME } from '../../lib/themes';
 import { useTheme } from '../../context/ThemeContext';
+import { useDialog } from '../../hooks/useDialog';
 import logoImg from '../../assets/logo.png';
 
 // Preloaded once; drawn (and tinted) onto the share canvas as the wordmark.
@@ -120,6 +121,7 @@ function roundRectPath(ctx, x, y, w, h, r) {
  */
 export default function ShareCard({ kind = 'book', book, quote, answer, onClose }) {
   const canvasRef = useRef(null);
+  const dialogRef = useDialog(onClose);
   const { theme: activeTheme } = useTheme();
   const [themeId, setThemeId] = useState(THEMES[activeTheme] ? activeTheme : DEFAULT_THEME);
   const [ready, setReady] = useState(false);
@@ -413,7 +415,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-      <div className="bg-surface rounded-3xl shadow-2xl p-5 max-w-sm w-full animate-in zoom-in-95 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Share" className="bg-surface rounded-3xl shadow-2xl p-5 max-w-sm w-full animate-in zoom-in-95 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-display font-bold text-lg text-ink">
             {kind === 'book' ? 'Share your read' : kind === 'quote' ? 'Share this quote' : 'Share this reflection'}

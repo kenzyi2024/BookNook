@@ -216,6 +216,7 @@ export default function CharacterMap({ book, onUpdate }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addCharacter()}
+            aria-label="Character name"
             placeholder="Name"
             className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
@@ -223,6 +224,7 @@ export default function CharacterMap({ book, onUpdate }) {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addCharacter()}
+            aria-label="Character role"
             placeholder="Role (optional) — e.g. rival, mentor"
             className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
@@ -265,6 +267,7 @@ export default function CharacterMap({ book, onUpdate }) {
             value={relLabel}
             onChange={(e) => setRelLabel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addRelationship()}
+            aria-label="Relationship label"
             placeholder="Relationship — e.g. sister, rival, mentor"
             className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />

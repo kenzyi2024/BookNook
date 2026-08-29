@@ -160,6 +160,7 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
             <select
               value={book.status}
               onChange={(e) => handleStatusChange(e.target.value)}
+              aria-label="Reading status"
               className="bg-stone-100 border border-stone-200 text-ink text-sm rounded-full px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-brand-400"
             >
               {STATUS_OPTIONS.map((o) => (

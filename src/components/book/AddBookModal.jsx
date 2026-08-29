@@ -4,6 +4,7 @@ import { SPINE_COLORS, randomSpine } from '../../lib/status';
 import { searchBooks } from '../../lib/bookSearch';
 import { GENRE_OPTIONS } from '../../lib/genres';
 import BookCover from '../ui/BookCover';
+import { useDialog } from '../../hooks/useDialog';
 
 /**
  * Add-book modal: search OpenLibrary, or add manually. Calls onAdd() which
@@ -16,6 +17,7 @@ export default function AddBookModal({ onClose, onAdd }) {
   const [searchError, setSearchError] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const dialogRef = useDialog(onClose);
 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -79,10 +81,14 @@ export default function AddBookModal({ onClose, onAdd }) {
 
   return (
     <div
-      className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in"
+      className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in"
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Add a book"
         className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
@@ -105,6 +111,7 @@ export default function AddBookModal({ onClose, onAdd }) {
                 <input
                   autoFocus
                   type="text"
+                  aria-label="Search for a book by title"
                   placeholder="Search by title..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

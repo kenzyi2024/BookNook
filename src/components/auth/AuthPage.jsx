@@ -190,13 +190,15 @@ export default function AuthPage({ onCancel }) {
   );
 }
 
-function Field({ icon, hint, value, onChange, ...props }) {
+function Field({ icon, hint, value, onChange, placeholder, ...props }) {
   return (
     <div>
       <div className="relative">
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</span>
         <input
           {...props}
+          placeholder={placeholder}
+          aria-label={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent text-ink placeholder:text-stone-400"

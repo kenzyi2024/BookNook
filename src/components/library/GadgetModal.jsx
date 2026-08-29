@@ -5,12 +5,14 @@ import { ACCESSORIES, GadgetArt } from '../../lib/gadgetArt';
 import { fileToDataUrl } from '../../lib/image';
 import { useToast } from '../ui/ToastProvider';
 import Button from '../ui/Button';
+import { useDialog } from '../../hooks/useDialog';
 
 /**
  * Add a shelf decoration: a plant, or a framed photo the user uploads.
  */
 export default function GadgetModal({ onAdd, onClose }) {
   const toast = useToast();
+  const dialogRef = useDialog(onClose);
   const [type, setType] = useState('plant');
   const [variant, setVariant] = useState('succulent');
   const [image, setImage] = useState('');
@@ -50,7 +52,7 @@ export default function GadgetModal({ onAdd, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-      <div className="bg-surface w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Add a shelf decoration" className="bg-surface w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-bold text-lg text-ink">Add a shelf decoration</h3>
           <button onClick={onClose} className="text-stone-400 hover:text-ink" aria-label="Close"><X size={20} /></button>

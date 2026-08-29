@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Feather, ArrowRight, Check, Clock3, Sparkles } from 'lucide-react';
 import { answerReflection, snoozeReflection } from '../../lib/reflections';
+import { useDialog } from '../../hooks/useDialog';
 
 /**
  * A calm, one-at-a-time reflection flow. It steps through the reflections that
@@ -8,6 +9,7 @@ import { answerReflection, snoozeReflection } from '../../lib/reflections';
  * them recall + re-articulate before scheduling the next spaced review.
  */
 export default function ReflectionsPanel({ items, onSave, onClose }) {
+  const dialogRef = useDialog(onClose);
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
@@ -37,6 +39,10 @@ export default function ReflectionsPanel({ items, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Reflections"
         className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >

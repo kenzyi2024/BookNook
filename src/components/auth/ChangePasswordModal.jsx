@@ -3,6 +3,7 @@ import { Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/ToastProvider';
 import { passwordStrength } from '../../lib/validation';
+import { useDialog } from '../../hooks/useDialog';
 
 /**
  * Modal for changing the account password. Talks to /api/auth/change-password.
@@ -10,6 +11,7 @@ import { passwordStrength } from '../../lib/validation';
 export default function ChangePasswordModal({ onClose }) {
   const { changePassword } = useAuth();
   const toast = useToast();
+  const dialogRef = useDialog(onClose);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -43,6 +45,7 @@ export default function ChangePasswordModal({ onClose }) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Change password"
@@ -97,7 +100,7 @@ export default function ChangePasswordModal({ onClose }) {
   );
 }
 
-function PwField({ value, onChange, ...props }) {
+function PwField({ value, onChange, placeholder, ...props }) {
   return (
     <div className="relative">
       <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
@@ -105,6 +108,8 @@ function PwField({ value, onChange, ...props }) {
         {...props}
         type="password"
         required
+        placeholder={placeholder}
+        aria-label={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent text-ink placeholder:text-stone-400"

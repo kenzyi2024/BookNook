@@ -241,6 +241,7 @@ export default function DiscoverView({ books, onAdd }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Describe what you feel like reading"
             placeholder="e.g. a cozy mystery, something like Project Hail Mary, short literary fiction…"
             className="w-full bg-surface border border-stone-300 rounded-full pl-11 pr-4 py-3 text-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />

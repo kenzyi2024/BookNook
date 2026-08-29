@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 /**
@@ -14,6 +15,18 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }) {
+  const cancelRef = useRef(null);
+
+  // Escape-to-close, focus the (safe) Cancel button on open, restore focus after.
+  useEffect(() => {
+    if (!open) return undefined;
+    const previouslyFocused = document.activeElement;
+    cancelRef.current?.focus();
+    const onKey = (e) => { if (e.key === 'Escape') onCancel?.(); };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); previouslyFocused?.focus?.(); };
+  }, [open, onCancel]);
+
   if (!open) return null;
 
   return (
@@ -44,6 +57,7 @@ export default function ConfirmDialog({
 
         <div className="flex gap-3 mt-6">
           <button
+            ref={cancelRef}
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-full font-semibold text-sm text-stone-600 bg-stone-100 hover:bg-stone-200 transition-colors"
           >

@@ -52,6 +52,8 @@ export default function Navbar({ activeTab, onTab, onAdd, user, onLogout, onTogg
               <button
                 key={t.id}
                 onClick={() => onTab(t.id)}
+                aria-label={t.label}
+                aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                   active ? 'bg-surface shadow-sm text-brand-600' : 'text-stone-500 hover:text-brand-600'
                 }`}

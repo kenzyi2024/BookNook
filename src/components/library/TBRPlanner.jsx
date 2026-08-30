@@ -91,7 +91,7 @@ export default function TBRPlanner({ books, onSave, onClose }) {
                   <div className="flex items-center gap-1.5 px-1 pb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                     {isMonth ? <CalendarDays size={13} className="text-brand-500" /> : null}
                     {monthLabel(bucket)}
-                    <span className="text-stone-300 font-normal normal-case">· {inBucket.length}</span>
+                    <span className="text-stone-400 font-normal normal-case">· {inBucket.length}</span>
                   </div>
                   <div className="space-y-1.5 min-h-[8px]">
                     {inBucket.map((it) => {
@@ -117,7 +117,7 @@ export default function TBRPlanner({ books, onSave, onClose }) {
                       );
                     })}
                     {inBucket.length === 0 && (
-                      <p className="text-xs text-stone-300 italic px-1 py-1">Drop books here</p>
+                      <p className="text-xs text-stone-400 italic px-1 py-1">Drop books here</p>
                     )}
                   </div>
                 </div>

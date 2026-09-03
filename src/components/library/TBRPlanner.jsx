@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ListOrdered, GripVertical, CalendarDays } from 'lucide-react';
+import { X, ListOrdered, GripVertical, CalendarDays, ChevronUp, ChevronDown } from 'lucide-react';
 import BookCover from '../ui/BookCover';
 import { useDialog } from '../../hooks/useDialog';
 
@@ -51,6 +51,23 @@ export default function TBRPlanner({ books, onSave, onClose }) {
     });
   };
 
+  // Touch-friendly reorder: swap an item with its neighbour in the same bucket.
+  const nudge = (id, dir) => {
+    setItems((prev) => {
+      const item = prev.find((i) => i.id === id);
+      if (!item) return prev;
+      const same = prev.filter((i) => i.bucket === item.bucket);
+      const pos = same.findIndex((i) => i.id === id);
+      const target = same[pos + dir];
+      if (!target) return prev;
+      const arr = prev.slice();
+      const ai = arr.findIndex((i) => i.id === id);
+      const bi = arr.findIndex((i) => i.id === target.id);
+      [arr[ai], arr[bi]] = [arr[bi], arr[ai]];
+      return arr;
+    });
+  };
+
   const save = () => {
     const updates = [];
     buckets.forEach((bucket) => {
@@ -77,7 +94,7 @@ export default function TBRPlanner({ books, onSave, onClose }) {
           <p className="px-6 py-10 text-center text-stone-500">Nothing on your Want to Read shelf yet.</p>
         ) : (
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-            <p className="text-xs text-stone-400 px-1">Drag books to reorder, or into a month to plan when you&rsquo;ll read them.</p>
+            <p className="text-xs text-stone-500 px-1">Drag to reorder (desktop), or use the arrows and the month picker on each book to plan when you&rsquo;ll read it.</p>
             {buckets.map((bucket) => {
               const inBucket = items.filter((i) => i.bucket === bucket);
               const isMonth = !!bucket;
@@ -107,12 +124,27 @@ export default function TBRPlanner({ books, onSave, onClose }) {
                           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragId && dragId !== it.id) move(dragId, bucket, it.id); setDragId(null); setOverBucket(null); }}
                           className={`flex items-center gap-2.5 bg-surface border border-stone-200 rounded-xl px-2.5 py-2 shadow-sm cursor-grab active:cursor-grabbing ${dragId === it.id ? 'opacity-40' : ''}`}
                         >
-                          <GripVertical size={15} className="text-stone-300 shrink-0" />
+                          <GripVertical size={15} className="text-stone-300 shrink-0 hidden sm:block" />
                           <BookCover book={b} rounded="rounded" className="w-7 h-10 shadow-sm shrink-0" showTitle={false} />
                           <span className="flex-1 min-w-0">
                             <span className="block text-sm font-semibold text-ink truncate">{b.title}</span>
                             <span className="block text-xs text-stone-400 truncate">{b.author}</span>
                           </span>
+                          {/* Touch/keyboard controls (drag still works on desktop) */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex flex-col">
+                              <button onClick={() => nudge(it.id, -1)} aria-label={`Move ${b.title} up`} className="text-stone-400 hover:text-brand-600 leading-none p-0.5"><ChevronUp size={15} /></button>
+                              <button onClick={() => nudge(it.id, 1)} aria-label={`Move ${b.title} down`} className="text-stone-400 hover:text-brand-600 leading-none p-0.5"><ChevronDown size={15} /></button>
+                            </div>
+                            <select
+                              value={bucket}
+                              onChange={(e) => move(it.id, e.target.value, null)}
+                              aria-label={`Move ${b.title} to a month`}
+                              className="text-xs bg-stone-50 border border-stone-200 rounded-lg pl-1.5 pr-1 py-1 max-w-[86px] focus:outline-none focus:ring-2 focus:ring-brand-400"
+                            >
+                              {buckets.map((bk) => <option key={bk || 'u'} value={bk}>{monthLabel(bk)}</option>)}
+                            </select>
+                          </div>
                         </div>
                       );
                     })}

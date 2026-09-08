@@ -1,18 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 
 import Navbar from './components/layout/Navbar';
 import AuthPage from './components/auth/AuthPage';
 import LibraryView from './components/library/LibraryView';
-import MetricsView from './components/metrics/MetricsView';
-import DiscoverView from './components/discover/DiscoverView';
-import CommonplaceBook from './components/quotes/CommonplaceBook';
-import ReflectionsPanel from './components/reflections/ReflectionsPanel';
 import AmbientPlayer from './components/ambient/AmbientPlayer';
 import DustMotes from './components/ambient/DustMotes';
+import BookLoader from './components/ui/BookLoader';
 import { dueReflections, currentPrompt } from './lib/reflections';
 import { Feather, X } from 'lucide-react';
-import BookDetailView from './components/book/BookDetailView';
-import AddBookModal from './components/book/AddBookModal';
+
+// Split the secondary tabs, book detail, and modals out of the initial bundle —
+// the Library view is the default landing tab, so the rest load on first use.
+const MetricsView = lazy(() => import('./components/metrics/MetricsView'));
+const DiscoverView = lazy(() => import('./components/discover/DiscoverView'));
+const CommonplaceBook = lazy(() => import('./components/quotes/CommonplaceBook'));
+const ReflectionsPanel = lazy(() => import('./components/reflections/ReflectionsPanel'));
+const BookDetailView = lazy(() => import('./components/book/BookDetailView'));
+const AddBookModal = lazy(() => import('./components/book/AddBookModal'));
 import { useApi } from './hooks/useApi';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
@@ -263,44 +267,48 @@ export default function App() {
           </div>
         )}
 
-        {selectedBook ? (
-          <BookDetailView
-            book={selectedBook}
-            books={books}
-            onUpdate={(updates) => handleUpdateBook(selectedBook._id, updates)}
-            onBack={() => setSelectedBook(null)}
-            onDelete={handleDeleteBook}
-            onReflect={() => openReflectForBook(selectedBook)}
-            onOpenBook={setSelectedBook}
-          />
-        ) : activeTab === 'library' ? (
-          <LibraryView
-            books={books}
-            onSelect={setSelectedBook}
-            onAddBook={handleAddBook}
-            onToggleSample={toggleSample}
-            sampleLoaded={sampleLoaded}
-            onClearLibrary={guest ? clearLibrary : undefined}
-            onUpdateBook={handleUpdateBook}
-          />
-        ) : activeTab === 'discover' ? (
-          <DiscoverView books={books} onAdd={handleAddBook} />
-        ) : activeTab === 'quotes' ? (
-          <CommonplaceBook books={books} onSelect={setSelectedBook} onUpdateBook={handleUpdateBook} />
-        ) : (
-          <MetricsView books={books} />
-        )}
+        <Suspense fallback={<div className="py-20 flex justify-center"><BookLoader /></div>}>
+          {selectedBook ? (
+            <BookDetailView
+              book={selectedBook}
+              books={books}
+              onUpdate={(updates) => handleUpdateBook(selectedBook._id, updates)}
+              onBack={() => setSelectedBook(null)}
+              onDelete={handleDeleteBook}
+              onReflect={() => openReflectForBook(selectedBook)}
+              onOpenBook={setSelectedBook}
+            />
+          ) : activeTab === 'library' ? (
+            <LibraryView
+              books={books}
+              onSelect={setSelectedBook}
+              onAddBook={handleAddBook}
+              onToggleSample={toggleSample}
+              sampleLoaded={sampleLoaded}
+              onClearLibrary={guest ? clearLibrary : undefined}
+              onUpdateBook={handleUpdateBook}
+            />
+          ) : activeTab === 'discover' ? (
+            <DiscoverView books={books} onAdd={handleAddBook} />
+          ) : activeTab === 'quotes' ? (
+            <CommonplaceBook books={books} onSelect={setSelectedBook} onUpdateBook={handleUpdateBook} />
+          ) : (
+            <MetricsView books={books} />
+          )}
+        </Suspense>
       </main>
 
-      {showAddModal && <AddBookModal onClose={() => setShowAddModal(false)} onAdd={handleAddBook} />}
+      <Suspense fallback={null}>
+        {showAddModal && <AddBookModal onClose={() => setShowAddModal(false)} onAdd={handleAddBook} />}
 
-      {reflectItems && reflectItems.length > 0 && (
-        <ReflectionsPanel
-          items={reflectItems}
-          onSave={(bookId, reflection) => handleUpdateBook(bookId, { reflection })}
-          onClose={() => setReflectItems(null)}
-        />
-      )}
+        {reflectItems && reflectItems.length > 0 && (
+          <ReflectionsPanel
+            items={reflectItems}
+            onSave={(bookId, reflection) => handleUpdateBook(bookId, { reflection })}
+            onClose={() => setReflectItems(null)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

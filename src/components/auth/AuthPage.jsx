@@ -59,7 +59,7 @@ export default function AuthPage({ onCancel }) {
   };
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col lg:flex-row">
+    <div className="relative min-h-screen bg-paper flex flex-col lg:flex-row">
       {/* Hero */}
       <div className="lg:w-1/2 flex items-center justify-center py-14 lg:py-0 lg:min-h-screen">
         <LandingPage />
@@ -186,6 +186,12 @@ export default function AuthPage({ onCancel }) {
           </p>
         </div>
       </div>
+
+      <footer className="absolute bottom-0 inset-x-0 py-4 text-center text-xs text-stone-400">
+        <a href="/privacy" className="hover:text-stone-600 transition-colors">Privacy</a>
+        <span className="mx-2" aria-hidden="true">·</span>
+        <a href="/terms" className="hover:text-stone-600 transition-colors">Terms</a>
+      </footer>
     </div>
   );
 }

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://book-tracker-ivory.vercel.app/sitemap.xml

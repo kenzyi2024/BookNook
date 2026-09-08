@@ -1,0 +1,14 @@
+{
+  "name": "BookNook",
+  "short_name": "BookNook",
+  "description": "A cozy reading tracker — catalog books, log sessions, save quotes, and visualize your habits.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF7EF",
+  "theme_color": "#C05D22",
+  "icons": [
+    { "src": "/favicon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/favicon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

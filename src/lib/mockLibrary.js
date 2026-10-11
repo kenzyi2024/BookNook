@@ -1,4 +1,5 @@
 import { SPINE_COLORS } from './status';
+import { todayKey } from './readingDates';
 
 /**
  * A rich sample library so anyone can see BookNook fully populated — spines,
@@ -10,6 +11,8 @@ import { SPINE_COLORS } from './status';
 export const DEMO_TAG = '__demo__';
 
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+// Reading dates are calendar days ('YYYY-MM-DD'), like the date inputs produce.
+const dayKeyAgo = (n) => todayKey(new Date(Date.now() - n * 86400000));
 const color = (i) => SPINE_COLORS[i % SPINE_COLORS.length];
 
 const NOTES = [
@@ -135,9 +138,11 @@ export function buildMockBooks() {
     if (status === 'read') {
       if (rating) book.rating = rating;
       // Finishes ~every couple weeks across the last ~10 months → full monthly chart.
-      book.finishedAt = daysAgo(10 + readCount * 16);
+      book.finishedAt = dayKeyAgo(10 + readCount * 16);
+      book.startedAt = dayKeyAgo(10 + readCount * 16 + 9 + (i % 4) * 5);
       readCount += 1;
     }
+    if (status === 'reading') book.startedAt = dayKeyAgo(6 + (i % 5) * 3);
     if (status === 'read' || status === 'reading') {
       book.notes = NOTES[i % NOTES.length];
       book.journalEntries = [

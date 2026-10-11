@@ -38,7 +38,11 @@ export default function App() {
 
   const [books, setBooks] = useState([]);
   const [activeTab, setActiveTab] = useState('library');
-  const [selectedBook, setSelectedBook] = useState(null);
+  // The open book is looked up from `books` by id, so it always reflects the
+  // latest saved/optimistic state (and closes itself if the book disappears).
+  const [selectedId, setSelectedId] = useState(null);
+  const selectedBook = useMemo(() => books.find((b) => b._id === selectedId) || null, [books, selectedId]);
+  const openBook = useCallback((book) => setSelectedId(book?._id ?? null), []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
   const sampleLoaded = books.some(isDemoBook);
@@ -73,7 +77,7 @@ export default function App() {
 
   const goTo = useCallback((tab) => {
     setActiveTab(tab);
-    setSelectedBook(null);
+    setSelectedId(null);
   }, []);
 
   const handleAddBook = async (newBook) => {
@@ -89,21 +93,30 @@ export default function App() {
   };
 
   const handleUpdateBook = async (id, updates) => {
-    // Optimistic update, capturing the prior book so we can roll back on failure.
+    // Optimistic update. On failure, roll back only the fields this update
+    // touched — and only where they still hold our value — so a failed save
+    // never undoes a different change that succeeded in the meantime.
     let prior = null;
     setBooks((prev) => prev.map((b) => {
       if (b._id === id) { prior = b; return { ...b, ...updates }; }
       return b;
     }));
-    setSelectedBook((prev) => (prev && prev._id === id ? { ...prev, ...updates } : prev));
     try {
       await api.updateBook(id, updates);
+      return true;
     } catch (err) {
       if (prior) {
-        setBooks((prev) => prev.map((b) => (b._id === id ? prior : b)));
-        setSelectedBook((prev) => (prev && prev._id === id ? prior : prev));
+        setBooks((prev) => prev.map((b) => {
+          if (b._id !== id) return b;
+          const restored = { ...b };
+          for (const key of Object.keys(updates)) {
+            if (b[key] === updates[key]) restored[key] = prior[key];
+          }
+          return restored;
+        }));
       }
       toast.error(err.message || 'Failed to save changes. Your change was reverted.');
+      return false;
     }
   };
 
@@ -111,7 +124,7 @@ export default function App() {
     try {
       await api.deleteBook(id);
       setBooks((prev) => prev.filter((b) => b._id !== id));
-      setSelectedBook(null);
+      setSelectedId(null);
       toast.success('Book deleted.');
     } catch (err) {
       toast.error(err.message || 'Failed to delete the book.');
@@ -270,18 +283,19 @@ export default function App() {
         <Suspense fallback={<div className="py-20 flex justify-center"><BookLoader /></div>}>
           {selectedBook ? (
             <BookDetailView
+              key={selectedBook._id}
               book={selectedBook}
               books={books}
               onUpdate={(updates) => handleUpdateBook(selectedBook._id, updates)}
-              onBack={() => setSelectedBook(null)}
+              onBack={() => setSelectedId(null)}
               onDelete={handleDeleteBook}
               onReflect={() => openReflectForBook(selectedBook)}
-              onOpenBook={setSelectedBook}
+              onOpenBook={openBook}
             />
           ) : activeTab === 'library' ? (
             <LibraryView
               books={books}
-              onSelect={setSelectedBook}
+              onSelect={openBook}
               onAddBook={handleAddBook}
               onToggleSample={toggleSample}
               sampleLoaded={sampleLoaded}
@@ -291,7 +305,7 @@ export default function App() {
           ) : activeTab === 'discover' ? (
             <DiscoverView books={books} onAdd={handleAddBook} />
           ) : activeTab === 'quotes' ? (
-            <CommonplaceBook books={books} onSelect={setSelectedBook} onUpdateBook={handleUpdateBook} />
+            <CommonplaceBook books={books} onSelect={openBook} onUpdateBook={handleUpdateBook} />
           ) : (
             <MetricsView books={books} />
           )}

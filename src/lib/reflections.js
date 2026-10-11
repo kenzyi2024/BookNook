@@ -10,6 +10,7 @@
  *   { stage, dueAt, answers: [{ stage, text, date }] }
  * It's created lazily the first time a reader answers, so nothing needs seeding.
  */
+import { readingDate } from './readingDates';
 
 // Expanding review intervals, in days. Each answered reflection schedules the
 // next one further out.
@@ -143,7 +144,8 @@ function dueAtOf(book) {
   if (book.reflection?.dueAt) return +new Date(book.reflection.dueAt);
   // First one becomes due a couple of days after finishing (or now, if that's
   // already in the past or the book was never dated).
-  const base = book.finishedAt ? +new Date(book.finishedAt) + 2 * DAY : Date.now();
+  const finished = readingDate(book.finishedAt);
+  const base = finished ? +finished + 2 * DAY : Date.now();
   return base;
 }
 

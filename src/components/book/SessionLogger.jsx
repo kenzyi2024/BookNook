@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Clock, Headphones, Hash, Percent, BookMarked, Plus, Timer } from 'lucide-react';
 import { fmtShortDate, hmsToSeconds, secondsToHms } from '../../lib/format';
 import ReadingTimer from './ReadingTimer';
+import { useToast } from '../ui/ToastProvider';
+import { datesForStatus, filledMessage, formatReadingDate } from '../../lib/readingDates';
 
 const MODES = [
   { id: 'page', label: 'Current page', icon: <BookMarked size={15} /> },
@@ -26,18 +28,33 @@ export default function SessionLogger({ book, onUpdate }) {
   const [audioTotal, setAudioTotal] = useState(book.audioDurationSec ? secondsToHms(book.audioDurationSec) : '');
   const [audioAt, setAudioAt] = useState('');
   const [showTimer, setShowTimer] = useState(false);
+  const toast = useToast();
+
+  // Progress moves the status along (reaching the last page finishes the book;
+  // starting an unread one marks it Reading) and fills in an empty start /
+  // finish date with today — never overwriting a date the reader set.
+  const withStatus = (updates, newPage) => {
+    let status = null;
+    if (newPage >= total && book.status !== 'read') status = 'read';
+    else if (newPage > 0 && newPage < total && book.status === 'want_to_read') status = 'reading';
+    if (!status) return updates;
+    const { updates: dates, filled } = datesForStatus(book, status);
+    // Logging pages on an unread book means reading started, even if it's
+    // finished in the same sitting.
+    if (status === 'read' && book.status === 'want_to_read' && !book.startedAt && !dates.startedAt) {
+      const started = datesForStatus(book, 'reading');
+      Object.assign(dates, started.updates);
+      filled.unshift(...started.filled);
+    }
+    if (filled.length) toast.success(filledMessage(filled));
+    return { ...updates, status, ...dates };
+  };
 
   // Quick scrub: move the slider to jump current page (no session recorded).
   const scrub = (newPage) => {
     newPage = Math.min(total, Math.max(0, newPage));
     const updates = { currentPage: newPage };
-    if (newPage >= total && book.status !== 'read') {
-      updates.status = 'read';
-      updates.finishedAt = new Date().toISOString();
-    } else if (newPage > 0 && newPage < total && book.status === 'want_to_read') {
-      updates.status = 'reading';
-    }
-    onUpdate(updates);
+    onUpdate(withStatus(updates, newPage));
   };
 
   // Log a timed session from the focus timer.
@@ -51,13 +68,7 @@ export default function SessionLogger({ book, onUpdate }) {
         { date: new Date().toISOString(), endPage: newPage, pagesRead: pagesRead || 0, percent, minutes: mins || 0, format: 'page' },
       ],
     };
-    if (newPage >= total && book.status !== 'read') {
-      updates.status = 'read';
-      updates.finishedAt = new Date().toISOString();
-    } else if (newPage > 0 && newPage < total && book.status === 'want_to_read') {
-      updates.status = 'reading';
-    }
-    onUpdate(updates);
+    onUpdate(withStatus(updates, newPage));
   };
 
   const sessions = [...(book.sessions || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -107,14 +118,7 @@ export default function SessionLogger({ book, onUpdate }) {
       updates.audioDurationSec = hmsToSeconds(audioTotal);
     }
 
-    if (newPage >= total && book.status !== 'read') {
-      updates.status = 'read';
-      updates.finishedAt = new Date().toISOString();
-    } else if (newPage > 0 && newPage < total && book.status === 'want_to_read') {
-      updates.status = 'reading';
-    }
-
-    onUpdate(updates);
+    onUpdate(withStatus(updates, newPage));
     setValue('');
     setMinutes('');
     setAudioAt('');
@@ -128,6 +132,12 @@ export default function SessionLogger({ book, onUpdate }) {
         <span className="text-sm font-semibold text-stone-500">
           {current} / {total} pages · {progress}%
         </span>
+      </div>
+      <div className="text-xs text-stone-500 mb-2 -mt-1">
+        {[
+          book.startedAt && `Started ${formatReadingDate(book.startedAt)}`,
+          book.finishedAt && `Finished ${formatReadingDate(book.finishedAt)}`,
+        ].filter(Boolean).join(' · ') || 'No reading dates yet — add them in the overview above.'}
       </div>
       <div className="relative h-6 flex items-center group mb-2">
         <div className="absolute w-full h-4 bg-stone-100 rounded-full shadow-inner pointer-events-none" />

@@ -2,10 +2,11 @@
  * "Year in Books" — compute a shareable recap of a reading year from the library.
  */
 import { normalizeGenre } from './genres';
+import { finishedOn } from './readingDates';
 
 const finishedInYear = (book, year) => {
-  const d = book.finishedAt || book.updatedAt;
-  return book.status === 'read' && d && new Date(d).getFullYear() === year;
+  const d = finishedOn(book);
+  return book.status === 'read' && d && d.getFullYear() === year;
 };
 
 /** Most frequent value in a list of strings, with its count. */
@@ -54,8 +55,8 @@ export function buildWrapped(books, year = new Date().getFullYear()) {
     });
   });
   finished.forEach((b) => {
-    const d = b.finishedAt || b.updatedAt;
-    if (d) monthCounts[new Date(d).getMonth()] += 1;
+    const d = finishedOn(b);
+    if (d) monthCounts[d.getMonth()] += 1;
   });
   const busiestIdx = monthCounts.indexOf(Math.max(...monthCounts));
   const busiestMonth = monthCounts[busiestIdx] > 0 ? { label: MONTHS[busiestIdx], count: monthCounts[busiestIdx] } : null;
@@ -81,8 +82,8 @@ export function buildWrapped(books, year = new Date().getFullYear()) {
 export function readingYears(books) {
   const years = new Set();
   books.forEach((b) => {
-    const d = b.finishedAt || b.updatedAt;
-    if (b.status === 'read' && d) years.add(new Date(d).getFullYear());
+    const d = finishedOn(b);
+    if (b.status === 'read' && d) years.add(d.getFullYear());
   });
   const list = [...years].sort((a, b) => b - a);
   return list.length ? list : [new Date().getFullYear()];

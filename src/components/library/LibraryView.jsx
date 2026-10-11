@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { BookOpenCheck, Library, Sparkles, Loader2, Rows3, LayoutGrid, Sprout, ArrowUpDown, Search, MoreHorizontal, Wand2, Trash2, ListOrdered } from 'lucide-react';
 import TBRPlanner from './TBRPlanner';
 import { genreNeedsHeal, markGenreHealed, classifyGenre } from '../../lib/genres';
 import { SORT_OPTIONS, sortBooks } from '../../lib/sortBooks';
 import { getGadgetPos, setGadgetPos } from '../../lib/gadgetPos';
-import { SUGGEST_FORMAT, parseSuggestions } from '../../lib/aiBooks';
+import { SUGGEST_FORMAT } from '../../lib/aiBooks';
+import { fetchRecommendations, filterRecommendations } from '../../lib/recommendations';
 import Shelf from './Shelf';
 import Bookcase from './Bookcase';
 import SuggestionsPanel from './SuggestionsPanel';
@@ -117,44 +118,55 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
     };
   }, [books, api]);
 
-  const seenTitles = useRef(new Set()); // titles already suggested this session — avoid repeats on refresh
+  // Suggestions already shown this session — avoided on refresh so "refresh"
+  // brings genuinely new books. Cleared when the panel is closed.
+  const seenSuggestions = useRef([]);
+  const requestId = useRef(0);
   const getSuggestions = async (type) => {
+    const id = ++requestId.current; // ignore a slower, superseded request
     setLoadingType(type);
     setSuggestionsType(type);
     setSuggestions([]);
-    const avoidList = [...books.map((b) => b.title), ...seenTitles.current];
-    const existing = avoidList.map((t) => `"${t}"`).join(', ');
     const seed = makeSeed();
-    const prompt =
-      type === 'history'
-        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend 3 new books I'd enjoy. Avoid: ${existing}. Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`
-        : `Recommend 3 popular must-read books. Avoid: ${existing}. Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`;
+    const buildPrompt = (avoid, count) => {
+      const avoidText = avoid.length ? ` Do not recommend any of these: ${avoid.map((t) => `"${t}"`).join(', ')}.` : '';
+      return type === 'history'
+        ? `I have these books: ${books.map((b) => `"${b.title}" by ${b.author}`).join(', ')}. Recommend ${count} new books I'd enjoy.${avoidText} Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`
+        : `Recommend ${count} popular must-read books.${avoidText} Variety (seed ${seed}).\n\n${SUGGEST_FORMAT}`;
+    };
     try {
-      const raw = await api.generateAI(prompt);
-      const owned = (s) => books.some((b) => b.title.toLowerCase() === s.title.toLowerCase());
-      const parsed = parseSuggestions(raw).filter((s) => !owned(s));
-      const fresh = parsed.filter((s) => !seenTitles.current.has(s.title.toLowerCase()));
-      const result = fresh.length ? fresh : parsed; // fall back if the model repeats everything
-      result.forEach((s) => seenTitles.current.add(s.title.toLowerCase()));
+      const result = await fetchRecommendations({
+        generate: api.generateAI,
+        buildPrompt,
+        shelf: books, // every status — want to read, reading, finished, DNF
+        exclude: seenSuggestions.current,
+        want: 3,
+      });
+      if (id !== requestId.current) return;
+      seenSuggestions.current.push(...result);
       setSuggestions(result);
     } catch (e) {
+      if (id !== requestId.current) return;
       console.error('Suggestion failed', e);
+      setSuggestionsType(null);
       toast.error(e.message || "Couldn't fetch suggestions. Try again.");
     } finally {
-      setLoadingType(null);
+      if (id === requestId.current) setLoadingType(null);
     }
+  };
+  const closeSuggestions = () => {
+    requestId.current += 1;
+    setSuggestions([]);
+    setSuggestionsType(null);
+    setLoadingType(null);
+    seenSuggestions.current = [];
   };
 
-  const addSuggestion = async (book) => {
-    const ok = await onAddBook(book);
-    if (ok) {
-      setSuggestions((prev) => {
-        const next = prev.filter((s) => s.title !== book.title);
-        if (!next.length) setSuggestionsType(null);
-        return next;
-      });
-    }
-  };
+  // Re-check against the live shelf, so a book added elsewhere (or just now)
+  // disappears from the list instead of being suggested again.
+  const visibleSuggestions = useMemo(() => filterRecommendations(suggestions, { shelf: books }), [suggestions, books]);
+
+  const addSuggestion = (book) => onAddBook(book);
 
   const suggestBlock = (type) => (
     <>
@@ -172,13 +184,13 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
           <Loader2 className="animate-spin" size={16} /> Finding books…
         </div>
       )}
-      {suggestionsType === type && suggestions.length > 0 && (
+      {suggestionsType === type && loadingType !== type && (
         <SuggestionsPanel
           title={type === 'history' ? 'Based on your history' : 'Popular books'}
-          suggestions={suggestions}
+          suggestions={visibleSuggestions}
           loading={loadingType === type}
           onRefresh={() => getSuggestions(type)}
-          onClose={() => { setSuggestions([]); setSuggestionsType(null); seenTitles.current.clear(); }}
+          onClose={closeSuggestions}
           onAdd={addSuggestion}
         />
       )}
@@ -234,7 +246,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
           title={filter === 'all' ? 'Your Library' : FILTERS.find((f) => f.id === filter).label}
           subtitle={books.length ? `${books.length} book${books.length === 1 ? '' : 's'} on your shelves` : 'Build your shelves'}
           action={
-            <Button variant="soft" onClick={() => getSuggestions('history')} disabled={books.length === 0}>
+            <Button variant="soft" onClick={() => getSuggestions('history')} disabled={books.length === 0 || loadingType === 'history'}>
               <Sparkles size={15} /> Up Next
             </Button>
           }
@@ -348,7 +360,7 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
       </div>
 
       {/* Recommendations — their own space, below the toolbar */}
-      {(loadingType === 'history' || (suggestionsType === 'history' && suggestions.length > 0)) && (
+      {books.length > 0 && suggestionsType === 'history' && (
         <div className="relative z-40 mb-6">
           {loadingType === 'history' ? (
             <div className="flex items-center gap-2 text-sm text-brand-600 bg-brand-50 px-4 py-2 rounded-full w-max">
@@ -357,10 +369,10 @@ export default function LibraryView({ books, onSelect, onAddBook, onToggleSample
           ) : (
             <SuggestionsPanel
               title="Up Next — based on your reading"
-              suggestions={suggestions}
+              suggestions={visibleSuggestions}
               loading={false}
               onRefresh={() => getSuggestions('history')}
-              onClose={() => { setSuggestions([]); setSuggestionsType(null); seenTitles.current.clear(); }}
+              onClose={closeSuggestions}
               onAdd={addSuggestion}
             />
           )}

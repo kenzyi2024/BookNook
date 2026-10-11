@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Download, X, Share2 } from 'lucide-react';
-import { fmtDate } from '../../lib/format';
+import { formatReadingDate } from '../../lib/readingDates';
 import { THEMES, DEFAULT_THEME } from '../../lib/themes';
 import { useTheme } from '../../context/ThemeContext';
 import { useDialog } from '../../hooks/useDialog';
@@ -285,7 +285,7 @@ export default function ShareCard({ kind = 'book', book, quote, answer, onClose 
         if (book.finishedAt) {
           ctx.fillStyle = hexA(CREAM, 0.75);
           ctx.font = `28px ${serif}`;
-          ctx.fillText(`Finished ${fmtDate(book.finishedAt)}`, W / 2, y);
+          ctx.fillText(`Finished ${formatReadingDate(book.finishedAt)}`, W / 2, y);
         }
       } else {
         // quote / reflection — text-forward layout

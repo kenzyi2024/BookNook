@@ -9,6 +9,7 @@ import Button from '../ui/Button';
 import BookCover from '../ui/BookCover';
 import { STATUSES } from '../../lib/status';
 import { monthKey, monthLabel } from '../../lib/format';
+import { finishedOn, readingDate } from '../../lib/readingDates';
 import { normalizeGenre } from '../../lib/genres';
 import Card from '../ui/Card';
 import StreakCalendar from './StreakCalendar';
@@ -268,7 +269,7 @@ export default function MetricsView({ books }) {
   // This calendar year
   const year = new Date().getFullYear();
   const inYear = (d) => d && new Date(d).getFullYear() === year;
-  const finishedThisYear = read.filter((b) => inYear(b.finishedAt || b.updatedAt)).length;
+  const finishedThisYear = read.filter((b) => inYear(finishedOn(b))).length;
 
   // Playful: a finished-book stack is ~2.3 cm per book.
   const stackCm = Math.round(read.length * 2.3);
@@ -277,7 +278,7 @@ export default function MetricsView({ books }) {
   // Highlights
   const topRated = [...rated].sort((a, b) => b.rating - a.rating || (b.totalPages || 0) - (a.totalPages || 0))[0];
   const longestBook = [...books].filter((b) => b.totalPages).sort((a, b) => b.totalPages - a.totalPages)[0];
-  const latestFinish = [...read].filter((b) => b.finishedAt).sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))[0];
+  const latestFinish = [...read].filter((b) => readingDate(b.finishedAt)).sort((a, b) => readingDate(b.finishedAt) - readingDate(a.finishedAt))[0];
   const currentRead = [...reading].sort(
     (a, b) => (b.currentPage / b.totalPages || 0) - (a.currentPage / a.totalPages || 0)
   )[0];
@@ -306,7 +307,7 @@ export default function MetricsView({ books }) {
   // Per-month trends (last 12 months)
   const months = lastMonths(12);
   const finishedByMonth = Object.fromEntries(months.map((m) => [m, 0]));
-  read.forEach((b) => { const key = monthKey(b.finishedAt || b.updatedAt); if (key in finishedByMonth) finishedByMonth[key] += 1; });
+  read.forEach((b) => { const d = finishedOn(b); if (!d) return; const key = monthKey(d); if (key in finishedByMonth) finishedByMonth[key] += 1; });
   const pagesByMonth = Object.fromEntries(months.map((m) => [m, 0]));
   books.forEach((b) => (b.sessions || []).forEach((s) => { const key = monthKey(s.date); if (key in pagesByMonth) pagesByMonth[key] += s.pagesRead || 0; }));
   const booksMonthData = months.map((m) => ({ label: monthLabel(m), value: finishedByMonth[m] }));
@@ -329,7 +330,7 @@ export default function MetricsView({ books }) {
 
   // Finished books, newest first, for the cover wall
   const finishedShelf = [...read].sort(
-    (a, b) => new Date(b.finishedAt || b.updatedAt || 0) - new Date(a.finishedAt || a.updatedAt || 0)
+    (a, b) => (finishedOn(b) || 0) - (finishedOn(a) || 0)
   );
 
   // Reading-personality insight chips (all derived from data that's always present)
@@ -437,7 +438,7 @@ export default function MetricsView({ books }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Highlight label="Top Rated" icon={<Trophy size={13} />} book={topRated} meta={topRated ? `${topRated.rating}★ · ${topRated.author}` : ''} />
         <Highlight label="Longest Read" icon={<Ruler size={13} />} book={longestBook} meta={longestBook ? `${(longestBook.totalPages || 0).toLocaleString()} pages` : ''} />
-        <Highlight label="Latest Finish" icon={<CheckCircle size={13} />} book={latestFinish} meta={latestFinish ? `Finished ${monthLabel(monthKey(latestFinish.finishedAt))}` : ''} />
+        <Highlight label="Latest Finish" icon={<CheckCircle size={13} />} book={latestFinish} meta={latestFinish ? `Finished ${monthLabel(monthKey(readingDate(latestFinish.finishedAt)))}` : ''} />
         <Highlight label="On Your Nightstand" icon={<BookOpen size={13} />} book={currentRead} meta={currentRead ? `${curPct}% · p.${currentRead.currentPage || 0}/${currentRead.totalPages}` : ''} />
       </div>
 

@@ -14,6 +14,9 @@ import AIToolsView from './AIToolsView';
 import SessionLogger from './SessionLogger';
 import NotesJournal from './NotesJournal';
 import ShareCard from './ShareCard';
+import ReadingDates from './ReadingDates';
+import BookSummary from './BookSummary';
+import { datesForStatus, filledMessage } from '../../lib/readingDates';
 import { STATUS_OPTIONS } from '../../lib/status';
 import { GENRE_OPTIONS, normalizeGenre } from '../../lib/genres';
 import { MOODS } from '../../lib/moods';
@@ -26,7 +29,6 @@ import { useToast } from '../ui/ToastProvider';
  */
 export default function BookDetailView({ book, books = [], onUpdate, onBack, onDelete, onReflect, onOpenBook }) {
   const [activeSubTab, setActiveSubTab] = useState('progress');
-  const [coverUrl, setCoverUrl] = useState(book.coverUrl || '');
   const [ratingInput, setRatingInput] = useState(book.rating ? String(book.rating) : '');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -50,7 +52,6 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
     try {
       const r = await refreshCover(book.title, book.author);
       if (r.coverUrl) {
-        setCoverUrl(r.coverUrl);
         onUpdate({ coverUrl: r.coverUrl, spineColor: r.spineColor });
         toast.success('Cover updated.');
       } else {
@@ -67,10 +68,7 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
     if (book.coverUrl || hasAttemptedFetch.current) return;
     hasAttemptedFetch.current = true;
     resolveCover(book.title, book.author, '').then((r) => {
-      if (r.coverUrl) {
-        setCoverUrl(r.coverUrl);
-        onUpdate({ coverUrl: r.coverUrl, spineColor: r.spineColor });
-      }
+      if (r.coverUrl) onUpdate({ coverUrl: r.coverUrl, spineColor: r.spineColor });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book.title, book.author, book.coverUrl]);
@@ -92,13 +90,14 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
     onUpdate({ moods: next });
   };
 
+  // Moving to Reading / Finished fills in an empty start / finish date with
+  // today (never overwriting one the reader set), and says so.
   const handleStatusChange = (status) => {
-    const updates = { status };
-    if (status === 'read') {
-      if (!book.finishedAt) updates.finishedAt = new Date().toISOString();
-      if (book.currentPage < book.totalPages) updates.currentPage = book.totalPages;
-    }
+    const { updates: dateUpdates, filled } = datesForStatus(book, status);
+    const updates = { status, ...dateUpdates };
+    if (status === 'read' && book.currentPage < book.totalPages) updates.currentPage = book.totalPages;
     onUpdate(updates);
+    if (filled.length) toast.success(filledMessage(filled));
   };
 
   const tabs = [
@@ -147,12 +146,13 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
 
       <div className="flex flex-col md:flex-row gap-8 mb-8 bg-surface p-6 rounded-3xl shadow-sm border border-stone-100">
         <BookCover
-          book={{ ...book, coverUrl: coverUrl || book.coverUrl }}
-          className="w-48 h-72 shadow-2xl flex-shrink-0"
+          book={book}
+          className="w-48 h-72 shadow-2xl flex-shrink-0 mx-auto md:mx-0"
           titleClass="text-lg text-center px-3 pb-3"
+          priority="high"
         />
 
-        <div className="flex-1 flex flex-col justify-center">
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
           <h1 className="text-3xl md:text-4xl font-display font-bold text-ink mb-2 leading-tight">{book.title}</h1>
           <p className="text-xl text-stone-600 font-display italic mb-4">{book.author}</p>
 
@@ -194,7 +194,7 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
           </div>
 
           {(book.status === 'read' || book.status === 'dnf') && (
-            <div className="flex items-center gap-4 bg-stone-50 p-4 rounded-2xl border border-stone-100 w-max">
+            <div className="flex flex-wrap items-center gap-4 bg-stone-50 p-4 rounded-2xl border border-stone-100 max-w-full sm:w-max">
               <span className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Your Rating:</span>
               <StarRating value={book.rating || 0} onChange={setRating} />
               <input
@@ -202,6 +202,7 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
                 step="0.01"
                 min="0"
                 max="5"
+                aria-label="Rating out of 5"
                 value={ratingInput}
                 onChange={(e) => handleRatingChange(e.target.value)}
                 className="w-20 bg-surface border border-stone-200 rounded-lg p-2 text-center font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
@@ -209,6 +210,10 @@ export default function BookDetailView({ book, books = [], onUpdate, onBack, onD
               />
             </div>
           )}
+
+          <ReadingDates book={book} onUpdate={onUpdate} />
+
+          <BookSummary book={book} onUpdate={onUpdate} />
 
           {/* Mood tags — how the book felt, not its genre */}
           <div className="mt-5">

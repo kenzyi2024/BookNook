@@ -41,15 +41,28 @@ const persistedIds = new Set();
 export const needsPersist = (id) => Boolean(id) && !persistedIds.has(id);
 export const markPersisted = (id) => persistedIds.add(id);
 
-/** Look up a (usually better/more current) cover from Google Books. Returns '' if none. */
+// Google Books' keyless quota is small. After a 429/403, skip it for a while
+// and go straight to Open Library instead of paying a doomed round-trip (and
+// deepening the rate limit) for every cover.
+const GOOGLE_COOLDOWN_MS = 5 * 60 * 1000;
+let googleBlockedUntil = 0;
+
+/**
+ * Look up a (usually better/more current) cover from Google Books.
+ * Returns the URL, '' if Google answered with no cover, or null if it couldn't
+ * answer (offline, rate-limited, error) — so callers don't cache a transient
+ * failure as "this book has no cover".
+ */
 async function lookupGoogleCover(title, author) {
   if (!title) return '';
+  if (Date.now() < googleBlockedUntil) return null;
   try {
     const q = `intitle:${title}${author ? ` inauthor:${author}` : ''}`;
     const res = await fetch(
       `https://www.googleapis.com/books/v1/volumes?maxResults=6&printType=books&q=${encodeURIComponent(q)}`
     );
-    if (!res.ok) return '';
+    if (res.status === 429 || res.status === 403) googleBlockedUntil = Date.now() + GOOGLE_COOLDOWN_MS;
+    if (!res.ok) return null;
     const data = await res.json();
     // First result sometimes has no thumbnail — scan a few for a usable one.
     for (const item of data.items || []) {
@@ -59,11 +72,11 @@ async function lookupGoogleCover(title, author) {
     }
     return '';
   } catch {
-    return '';
+    return null;
   }
 }
 
-/** Look up a front-cover image URL from Open Library. Returns '' if none. */
+/** Look up a front-cover image URL from Open Library. '' if none, null if it couldn't answer. */
 export async function lookupCoverUrl(title, author) {
   if (!title) return '';
   try {
@@ -74,12 +87,12 @@ export async function lookupCoverUrl(title, author) {
       fields: 'cover_i',
     });
     const res = await fetch(`https://openlibrary.org/search.json?${q}`);
-    if (!res.ok) return '';
+    if (!res.ok) return null;
     const data = await res.json();
     const coverId = data?.docs?.[0]?.cover_i;
     return coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : '';
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -101,17 +114,31 @@ function acquire() {
 function release() { active -= 1; drain(); }
 
 /**
+ * Google first (better covers), Open Library as the fallback. Returns a URL,
+ * '' only when both providers answered and neither had a cover, or null when
+ * either couldn't answer (so the miss isn't cached and is retried later).
+ */
+async function lookupBoth(title, author) {
+  const google = await lookupGoogleCover(title, author);
+  if (google) return google;
+  const ol = await lookupCoverUrl(title, author);
+  if (ol) return ol;
+  return google === '' && ol === '' ? '' : null;
+}
+
+/**
  * Force a fresh cover lookup, ignoring any stored/cached URL — backs the
  * "Refresh cover" action for replacing a wrong or low-quality cover.
  */
 export async function refreshCover(title, author) {
   await acquire();
   try {
-    const googleUrl = await lookupGoogleCover(title, author);
-    const display = googleUrl || (await lookupCoverUrl(title, author));
-    mem[keyOf(title, author)] = { display, color: '' };
-    saveCacheSoon();
-    return { coverUrl: display, spineColor: '' };
+    const display = await lookupBoth(title, author);
+    if (display !== null) {
+      mem[keyOf(title, author)] = { display, color: '' };
+      saveCacheSoon();
+    }
+    return { coverUrl: display || '', spineColor: '' };
   } finally {
     release();
   }
@@ -138,11 +165,13 @@ export async function resolveCover(title, author, knownUrl = '') {
 
   await acquire();
   try {
-    let display = await lookupGoogleCover(title, author);
-    if (!display) display = await lookupCoverUrl(title, author);
-    mem[k] = { display, color: '' };
-    saveCacheSoon();
-    return { coverUrl: display, spineColor: '' };
+    const display = await lookupBoth(title, author);
+    // Only remember a definitive answer; a failed lookup is retried next time.
+    if (display !== null) {
+      mem[k] = { display, color: '' };
+      saveCacheSoon();
+    }
+    return { coverUrl: display || '', spineColor: '' };
   } finally {
     release();
   }
